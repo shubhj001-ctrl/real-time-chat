@@ -9,21 +9,37 @@
 
 <!-- Username Screen -->
 <div class="username-container" id="username-container">
-  <h2>Enter your name</h2>
-  <form id="username-form">
-    <input id="username-input" type="text" placeholder="Your name" required />
-    <button type="submit">Join Chat</button>
-  </form>
+  <div class="username-card fade-in">
+    <h2>👋 Welcome</h2>
+    <p>Enter your name to continue</p>
+    <form id="username-form">
+      <input
+        id="username-input"
+        type="text"
+        placeholder="Your name"
+        required
+      />
+      <button type="submit">Join Chat</button>
+    </form>
+  </div>
 </div>
 
 <!-- Chat Screen -->
 <div class="chat-container hidden" id="chat-container">
-  <h2>💬 Real-Time Chat</h2>
+  <div class="chat-header">
+    💬 Real-Time Chat
+  </div>
+
   <div id="chat-box"></div>
 
-  <form id="chat-form">
-    <input id="message" type="text" placeholder="Type a message..." autocomplete="off" />
-    <button type="submit">Send</button>
+  <form id="chat-form" class="chat-input">
+    <input
+      id="message"
+      type="text"
+      placeholder="Type a message…"
+      autocomplete="off"
+    />
+    <button type="submit">➤</button>
   </form>
 </div>
 

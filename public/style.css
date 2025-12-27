@@ -1,84 +1,113 @@
 * {
   box-sizing: border-box;
-  font-family: Arial, sans-serif;
+  font-family: "Segoe UI", Arial, sans-serif;
 }
 
 body {
   margin: 0;
-  background: #e5ddd5;
+  background: linear-gradient(135deg, #ece5dd, #d2dbdc);
 }
 
-/* =====================
+/* ======================
+   ANIMATIONS
+====================== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* ======================
    USERNAME SCREEN
-===================== */
+====================== */
 .username-container {
   height: 100vh;
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 }
 
 .username-card {
   background: white;
-  padding: 25px;
+  padding: 30px;
   width: 90%;
-  max-width: 350px;
-  border-radius: 10px;
+  max-width: 360px;
+  border-radius: 14px;
   text-align: center;
-  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.15);
 }
 
 .username-card h2 {
-  margin-bottom: 15px;
+  margin-bottom: 5px;
+}
+
+.username-card p {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 20px;
 }
 
 .username-card input {
   width: 100%;
-  padding: 12px;
-  margin-bottom: 12px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  padding: 14px;
   font-size: 16px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  margin-bottom: 15px;
 }
 
 .username-card button {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   background: #25d366;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   font-size: 16px;
   cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.username-card button:hover {
-  background: #1ebe5d;
+.username-card button:active {
+  transform: scale(0.97);
 }
 
-/* =====================
+/* ======================
    CHAT SCREEN
-===================== */
+====================== */
 .chat-container {
   height: 100vh;
+  max-width: 420px;
+  margin: auto;
   display: flex;
   flex-direction: column;
-  max-width: 450px;
-  margin: auto;
   background: #f0f0f0;
 }
 
 .chat-header {
   background: #075e54;
   color: white;
-  padding: 15px;
+  padding: 16px;
   text-align: center;
   font-size: 18px;
+  letter-spacing: 0.5px;
 }
 
 #chat-box {
   flex: 1;
-  padding: 10px;
+  padding: 12px;
   overflow-y: auto;
   background: #efeae2;
 }
@@ -86,57 +115,65 @@ body {
 /* Messages */
 .message {
   max-width: 75%;
-  padding: 8px 12px;
-  margin: 6px 0;
-  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 8px 0;
+  border-radius: 14px;
   font-size: 14px;
   word-wrap: break-word;
+  animation: slideUp 0.25s ease-out;
 }
 
 .me {
   background: #dcf8c6;
   margin-left: auto;
+  border-bottom-right-radius: 4px;
 }
 
 .other {
   background: white;
+  border-bottom-left-radius: 4px;
 }
 
 .system {
   text-align: center;
   font-size: 12px;
-  color: gray;
+  color: #777;
   margin: 10px 0;
 }
 
-/* Input area */
+/* ======================
+   INPUT AREA
+====================== */
 .chat-input {
   display: flex;
   padding: 10px;
   background: white;
+  border-top: 1px solid #ddd;
 }
 
 .chat-input input {
   flex: 1;
-  padding: 10px;
-  border-radius: 20px;
+  padding: 12px 14px;
+  border-radius: 25px;
   border: 1px solid #ccc;
   font-size: 15px;
 }
 
 .chat-input button {
-  margin-left: 8px;
-  padding: 10px 16px;
-  background: #25d366;
+  margin-left: 10px;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
   border: none;
-  border-radius: 20px;
+  background: #25d366;
   color: white;
-  font-size: 15px;
+  font-size: 18px;
   cursor: pointer;
+  transition: transform 0.1s;
 }
 
-.chat-input button:hover {
-  background: #1ebe5d;
+.chat-input button:active {
+  transform: scale(0.9);
 }
 
 .hidden {
