@@ -8,13 +8,12 @@ const usernameInput = document.getElementById("username-input");
 
 const chatForm = document.getElementById("chat-form");
 const messageInput = document.getElementById("message");
-const sendButton = chatForm.querySelector("button");
 const chatBox = document.getElementById("chat-box");
 
 let username = "";
 let joined = false;
 
-// Join
+// Join chat
 usernameForm.addEventListener("submit", (e) => {
   e.preventDefault();
 
@@ -24,23 +23,32 @@ usernameForm.addEventListener("submit", (e) => {
   socket.emit("join", username);
   joined = true;
 
-  messageInput.disabled = false;
-  sendButton.disabled = false;
-
   usernameScreen.classList.remove("active");
   chatScreen.classList.add("active");
+
+  // Auto focus input (important for mobile)
+  setTimeout(() => {
+    messageInput.focus();
+  }, 300);
 });
 
-// Send
+// Send message
 chatForm.addEventListener("submit", (e) => {
   e.preventDefault();
-  if (!joined || !messageInput.value.trim()) return;
+
+  // HARD GUARD
+  if (!joined) {
+    alert("Enter a vibe name first ✨");
+    return;
+  }
+
+  if (!messageInput.value.trim()) return;
 
   socket.emit("chatMessage", messageInput.value);
   messageInput.value = "";
 });
 
-// Receive
+// Receive message
 socket.on("chatMessage", (data) => {
   if (!data || !data.user) return;
 
@@ -59,8 +67,10 @@ socket.on("chatMessage", (data) => {
   chatBox.scrollTop = chatBox.scrollHeight;
 });
 
-// System
+// System messages
 socket.on("systemMessage", (msg) => {
+  if (!msg) return;
+
   const div = document.createElement("div");
   div.className = "system";
   div.textContent = msg;
