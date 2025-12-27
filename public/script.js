@@ -19,33 +19,46 @@ const passInput = document.getElementById("auth-pass");
 const primaryBtn = document.getElementById("primary-btn");
 const switchBtn = document.getElementById("switch-btn");
 
-/* ---------- AUTO LOGIN ON REFRESH ---------- */
+/* ---------- CHAT UI ---------- */
+const chatBox = document.getElementById("chat-box");
+const msgInput = document.getElementById("message");
+const typingDiv = document.getElementById("typing");
+const onlineCount = document.getElementById("online-count");
+
+/* ---------- PREVENT LOGIN FLASH ---------- */
 if (currentUser) {
-  socket.emit("login", { username: currentUser, password: "__auto__" }, res => {
-    if (res.ok) {
-      authScreen.classList.remove("active");
-      chatScreen.classList.add("active");
-    } else {
-      localStorage.removeItem("vibeUser");
+  authScreen.style.display = "none";
+  chatScreen.classList.add("active");
+
+  socket.emit(
+    "login",
+    { username: currentUser, password: "__auto__" },
+    res => {
+      if (!res.ok) {
+        localStorage.removeItem("vibeUser");
+        location.reload();
+        return;
+      }
+
+      // 🔥 RESTORE CHAT HISTORY
+      renderHistory(res.history);
     }
-  });
+  );
 }
 
-/* ---------- MODE SWITCH ---------- */
+/* ---------- AUTH MODE SWITCH ---------- */
 switchBtn.onclick = () => {
   isLogin = !isLogin;
-
   authTitle.textContent = isLogin ? "Welcome back 👋" : "Create account ✨";
   authSub.textContent = isLogin ? "Login to continue" : "Signup to get started";
   primaryBtn.textContent = isLogin ? "Login" : "Signup";
   switchBtn.textContent = isLogin
     ? "Don’t have an account? Signup"
     : "Already have an account? Login";
-
   authMsg.textContent = "";
 };
 
-/* ---------- PRIMARY ACTION ---------- */
+/* ---------- AUTH ACTION ---------- */
 primaryBtn.onclick = () => {
   const username = userInput.value.trim();
   const password = passInput.value.trim();
@@ -63,7 +76,6 @@ primaryBtn.onclick = () => {
       return;
     }
 
-    /* SIGNUP SUCCESS → BACK TO LOGIN */
     if (!isLogin) {
       authMsg.textContent = "✅ Signup successful. You can login now.";
       authMsg.style.color = "lightgreen";
@@ -72,72 +84,29 @@ primaryBtn.onclick = () => {
       return;
     }
 
-    /* LOGIN SUCCESS */
     currentUser = username;
     localStorage.setItem("vibeUser", username);
 
-    authScreen.classList.remove("active");
+    authScreen.style.display = "none";
     chatScreen.classList.add("active");
+
+    renderHistory(res.history);
   });
 };
 
-/* ---------- CHAT ---------- */
-const chatBox = document.getElementById("chat-box");
-const msgInput = document.getElementById("message");
-const typingDiv = document.getElementById("typing");
-const onlineCount = document.getElementById("online-count");
-
-function timeNow() {
-  return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
-
+/* ---------- CHAT SEND ---------- */
 document.getElementById("chat-form").onsubmit = e => {
   e.preventDefault();
   const text = msgInput.value.trim();
   if (!text) return;
 
-  const bubble = document.createElement("div");
-  bubble.className = "message-row me";
-  bubble.innerHTML = `
-    <div class="bubble me">
-      <div class="text">${text}</div>
-      <div class="meta">
-        <span>${timeNow()}</span>
-        <span class="tick">⏳</span>
-      </div>
-    </div>
-    <div class="avatar me">${currentUser[0].toUpperCase()}</div>
-  `;
-
-  chatBox.appendChild(bubble);
-  chatBox.scrollTop = chatBox.scrollHeight;
-
-  socket.emit("chatMessage", text, ack => {
-    if (ack?.delivered) {
-      bubble.querySelector(".tick").textContent = "✓";
-    }
-  });
-
+  socket.emit("chatMessage", text, () => {});
   msgInput.value = "";
 };
 
 /* ---------- RECEIVE ---------- */
-socket.on("chatMessage", data => {
-  if (data.user === currentUser) return;
-
-  const bubble = document.createElement("div");
-  bubble.className = "message-row other";
-  bubble.innerHTML = `
-    <div class="avatar other">${data.user[0].toUpperCase()}</div>
-    <div class="bubble other">
-      <div class="user">${data.user}</div>
-      <div class="text">${data.text}</div>
-      <div class="meta"><span>${timeNow()}</span></div>
-    </div>
-  `;
-
-  chatBox.appendChild(bubble);
-  chatBox.scrollTop = chatBox.scrollHeight;
+socket.on("chatMessage", msg => {
+  addMessage(msg);
 });
 
 /* ---------- ONLINE ---------- */
@@ -156,3 +125,30 @@ msgInput.oninput = () => {
 socket.on("typing", data => {
   typingDiv.textContent = data.isTyping ? `${data.user} is typing…` : "";
 });
+
+/* ---------- HELPERS ---------- */
+function renderHistory(history = []) {
+  chatBox.innerHTML = "";
+  history.forEach(addMessage);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function addMessage(msg) {
+  const isMe = msg.user === currentUser;
+
+  const row = document.createElement("div");
+  row.className = `message-row ${isMe ? "me" : "other"}`;
+
+  row.innerHTML = `
+    ${!isMe ? `<div class="avatar other">${msg.user[0]}</div>` : ""}
+    <div class="bubble ${isMe ? "me" : "other"}">
+      ${!isMe ? `<div class="user">${msg.user}</div>` : ""}
+      <div class="text">${msg.text}</div>
+      <div class="meta">${new Date(msg.time).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}</div>
+    </div>
+    ${isMe ? `<div class="avatar me">${currentUser[0]}</div>` : ""}
+  `;
+
+  chatBox.appendChild(row);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
