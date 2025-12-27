@@ -6,9 +6,8 @@ const io = require("socket.io")(http);
 app.use(express.static("public"));
 
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
+  console.log("Connected:", socket.id);
 
-  // User joins with username
   socket.on("join", (username) => {
     if (!username) return;
 
@@ -21,12 +20,8 @@ io.on("connection", (socket) => {
     );
   });
 
-  // Chat message
   socket.on("chatMessage", (msg) => {
-    // HARD SAFETY CHECK
-    if (!socket.joined || !socket.username) {
-      return; // silently ignore invalid messages
-    }
+    if (!socket.joined || !socket.username) return;
 
     io.emit("chatMessage", {
       user: socket.username,
@@ -34,7 +29,6 @@ io.on("connection", (socket) => {
     });
   });
 
-  // Disconnect
   socket.on("disconnect", () => {
     if (socket.joined && socket.username) {
       socket.broadcast.emit(
