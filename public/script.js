@@ -1,22 +1,44 @@
 const socket = io();
 
-/* AUTH */
+/* SCREENS */
 const authScreen = document.getElementById("auth-screen");
 const chatScreen = document.getElementById("chat-screen");
 
+/* AUTH INPUTS */
 const userInput = document.getElementById("auth-user");
 const passInput = document.getElementById("auth-pass");
 const authMsg = document.getElementById("auth-msg");
 
-document.getElementById("login-btn").onclick = () => auth("login");
-document.getElementById("signup-btn").onclick = () => auth("signup");
+document.getElementById("login-btn").onclick = () => login();
+document.getElementById("signup-btn").onclick = () => signup();
 
-function auth(type) {
-  socket.emit(type, {
-    username: userInput.value,
-    password: passInput.value
+/* ---------- SIGNUP ---------- */
+function signup() {
+  socket.emit("signup", {
+    username: userInput.value.trim(),
+    password: passInput.value.trim()
   }, res => {
-    if (!res.ok) return authMsg.textContent = res.msg || "Error";
+    if (!res.ok) {
+      authMsg.textContent = res.msg;
+      return;
+    }
+
+    authMsg.textContent = "✅ Signup successful. Please login.";
+    authMsg.style.color = "lightgreen";
+  });
+}
+
+/* ---------- LOGIN ---------- */
+function login() {
+  socket.emit("login", {
+    username: userInput.value.trim(),
+    password: passInput.value.trim()
+  }, res => {
+    if (!res.ok) {
+      authMsg.textContent = res.msg;
+      authMsg.style.color = "red";
+      return;
+    }
 
     authScreen.classList.remove("active");
     chatScreen.classList.add("active");
@@ -34,11 +56,12 @@ document.getElementById("chat-form").onsubmit = (e) => {
   if (!msgInput.value) return;
 
   socket.emit("chatMessage", msgInput.value, (ack) => {
-    if (ack.delivered) {
+    if (ack?.delivered) {
       const el = document.createElement("div");
       el.className = "message delivered me";
       el.textContent = msgInput.value;
       chatBox.appendChild(el);
+      chatBox.scrollTop = chatBox.scrollHeight;
     }
   });
 
@@ -51,9 +74,10 @@ socket.on("chatMessage", data => {
   el.className = "message other";
   el.textContent = `${data.user}: ${data.text}`;
   chatBox.appendChild(el);
+  chatBox.scrollTop = chatBox.scrollHeight;
 });
 
-/* ONLINE COUNT */
+/* ONLINE USERS */
 socket.on("onlineCount", n => {
   onlineCount.textContent = `🟢 ${n} online`;
 });
