@@ -7,66 +7,107 @@ let currentUser = localStorage.getItem("vibeUser") || "";
 const authScreen = document.getElementById("auth-screen");
 const chatScreen = document.getElementById("chat-screen");
 
-/* ---------- CHAT ---------- */
-const chatBox = document.getElementById("chat-box");
-const msgInput = document.getElementById("message");
-const fileInput = document.getElementById("file-input");
-const onlineCount = document.getElementById("online-count");
+/* ---------- AUTH UI ---------- */
+const authTitle = document.getElementById("auth-title");
+const authSub = document.getElementById("auth-sub");
+const authMsg = document.getElementById("auth-msg");
 
-/* ---------- AUTO LOGIN ---------- */
+const userInput = document.getElementById("auth-user");
+const passInput = document.getElementById("auth-pass");
+
+const primaryBtn = document.getElementById("primary-btn");
+const switchBtn = document.getElementById("switch-btn");
+
+let isLogin = true;
+
+/* ---------- AUTO LOGIN (SAFE) ---------- */
 if (currentUser) {
   authScreen.style.display = "none";
   chatScreen.classList.add("active");
 
-  socket.emit("login", { username: currentUser, password: "__auto__" }, res => {
-    if (res.ok) {
-      renderHistory(res.history);
-    } else {
-      localStorage.removeItem("vibeUser");
-      location.reload();
+  socket.emit(
+    "login",
+    { username: currentUser, password: "__auto__" },
+    res => {
+      if (res.ok) {
+        renderHistory(res.history);
+      } else {
+        // 🔥 FIX: reset broken session
+        localStorage.removeItem("vibeUser");
+        currentUser = "";
+        chatScreen.classList.remove("active");
+        authScreen.style.display = "flex";
+        authMsg.textContent = "Session expired. Please login again.";
+        authMsg.style.color = "orange";
+      }
     }
-  });
+  );
 }
 
-/* ---------- SEND TEXT ---------- */
+/* ---------- SWITCH LOGIN / SIGNUP ---------- */
+switchBtn.onclick = () => {
+  isLogin = !isLogin;
+
+  authTitle.textContent = isLogin ? "Welcome back 👋" : "Create account ✨";
+  authSub.textContent = isLogin ? "Login to continue" : "Signup to get started";
+  primaryBtn.textContent = isLogin ? "Login" : "Signup";
+  switchBtn.textContent = isLogin
+    ? "Don’t have an account? Signup"
+    : "Already have an account? Login";
+
+  authMsg.textContent = "";
+};
+
+/* ---------- LOGIN / SIGNUP ---------- */
+primaryBtn.onclick = () => {
+  const username = userInput.value.trim();
+  const password = passInput.value.trim();
+
+  if (!username || !password) {
+    authMsg.textContent = "⚠️ Fill all fields";
+    authMsg.style.color = "orange";
+    return;
+  }
+
+  socket.emit(isLogin ? "login" : "signup", { username, password }, res => {
+    if (!res.ok) {
+      authMsg.textContent = res.msg;
+      authMsg.style.color = "red";
+      return;
+    }
+
+    if (!isLogin) {
+      authMsg.textContent = "✅ Signup successful. You can login now.";
+      authMsg.style.color = "lightgreen";
+      isLogin = true;
+      switchBtn.click();
+      return;
+    }
+
+    currentUser = username;
+    localStorage.setItem("vibeUser", username);
+
+    authScreen.style.display = "none";
+    chatScreen.classList.add("active");
+
+    renderHistory(res.history);
+  });
+};
+
+/* ---------- CHAT ---------- */
+const chatBox = document.getElementById("chat-box");
+const msgInput = document.getElementById("message");
+
 document.getElementById("chat-form").onsubmit = e => {
   e.preventDefault();
   const text = msgInput.value.trim();
   if (!text) return;
 
-  socket.emit("chatMessage", text, () => {});
+  socket.emit("chatMessage", text);
   msgInput.value = "";
 };
 
-/* ---------- SEND MEDIA ---------- */
-fileInput.onchange = () => {
-  const file = fileInput.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = () => {
-    const type = file.type.startsWith("image") ? "image" : "video";
-
-    socket.emit(
-      "mediaMessage",
-      { type, data: reader.result },
-      () => {}
-    );
-  };
-  reader.readAsDataURL(file);
-
-  fileInput.value = "";
-};
-
-/* ---------- RECEIVE MESSAGE ---------- */
-socket.on("chatMessage", msg => {
-  addMessage(msg);
-});
-
-/* ---------- ONLINE ---------- */
-socket.on("onlineCount", n => {
-  onlineCount.textContent = `🟢 ${n} online`;
-});
+socket.on("chatMessage", msg => addMessage(msg));
 
 /* ---------- HELPERS ---------- */
 function renderHistory(history = []) {
@@ -76,31 +117,7 @@ function renderHistory(history = []) {
 
 function addMessage(msg) {
   const isMe = msg.user === currentUser;
-
-  const row = document.createElement("div");
-  row.className = `message-row ${isMe ? "me" : "other"}`;
-
-  let content = "";
-  if (msg.type === "text") {
-    content = `<div class="text">${msg.content}</div>`;
-  } else if (msg.type === "image") {
-    content = `<img src="${msg.content}" />`;
-  } else if (msg.type === "video") {
-    content = `<video src="${msg.content}" controls></video>`;
-  }
-
-  row.innerHTML = `
-    ${!isMe ? `<div class="avatar other">${msg.user[0]}</div>` : ""}
-    <div class="bubble ${isMe ? "me" : "other"}">
-      ${!isMe ? `<div class="user">${msg.user}</div>` : ""}
-      ${content}
-      <div class="meta">
-        ${new Date(msg.time).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}
-      </div>
-    </div>
-    ${isMe ? `<div class="avatar me">${currentUser[0]}</div>` : ""}
-  `;
-
-  chatBox.appendChild(row);
-  chatBox.scrollTop = chatBox.scrollHeight;
+  const div = document.createElement("div");
+  div.textContent = `${msg.user}: ${msg.content}`;
+  chatBox.appendChild(div);
 }

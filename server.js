@@ -5,25 +5,27 @@ const io = require("socket.io")(http);
 
 app.use(express.static("public"));
 
-const users = {};
+const users = {};        // TEMP users (reset on restart)
 const onlineUsers = {};
-const messages = []; // text + media history
+const messages = [];
 
 io.on("connection", socket => {
 
-  /* ---------- SIGNUP ---------- */
+  /* SIGNUP */
   socket.on("signup", ({ username, password }, cb) => {
     if (!username || !password) {
       return cb({ ok: false, msg: "All fields required" });
     }
+
     if (users[username]) {
       return cb({ ok: false, msg: "User already exists" });
     }
+
     users[username] = password;
     cb({ ok: true });
   });
 
-  /* ---------- LOGIN ---------- */
+  /* LOGIN */
   socket.on("login", ({ username, password }, cb) => {
     if (!users[username]) {
       return cb({ ok: false, msg: "User not found" });
@@ -42,7 +44,7 @@ io.on("connection", socket => {
     cb({ ok: true, history: messages });
   });
 
-  /* ---------- TEXT MESSAGE ---------- */
+  /* TEXT MESSAGE */
   socket.on("chatMessage", (text, cb) => {
     if (!socket.username || !text) return;
 
@@ -59,17 +61,15 @@ io.on("connection", socket => {
     cb({ delivered: true });
   });
 
-  /* ---------- MEDIA MESSAGE ---------- */
+  /* MEDIA MESSAGE */
   socket.on("mediaMessage", ({ type, data }, cb) => {
     if (!socket.username || !data) return;
-
-    if (!["image", "video"].includes(type)) return;
 
     const msg = {
       id: Date.now() + Math.random(),
       user: socket.username,
       type,
-      content: data, // base64
+      content: data,
       time: new Date().toISOString()
     };
 
@@ -78,18 +78,10 @@ io.on("connection", socket => {
     cb({ delivered: true });
   });
 
-  /* ---------- TYPING ---------- */
-  socket.on("typing", isTyping => {
-    if (!socket.username) return;
-    socket.broadcast.emit({ user: socket.username, isTyping });
-  });
-
-  /* ---------- DISCONNECT ---------- */
   socket.on("disconnect", () => {
     if (socket.username) {
       delete onlineUsers[socket.id];
       io.emit("onlineCount", Object.keys(onlineUsers).length);
-      socket.broadcast.emit("systemMessage", `${socket.username} left`);
     }
   });
 });

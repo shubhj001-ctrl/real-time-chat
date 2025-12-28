@@ -300,6 +300,8 @@ html, body {
 }
 
 .bubble video {
-  controls: true;
+  max-width: 220px;
+  border-radius: 12px;
+  margin-top: 6px;
 }
 
