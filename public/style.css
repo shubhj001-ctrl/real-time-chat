@@ -285,3 +285,21 @@ html, body {
     opacity: 1;
   }
 }
+.attach {
+  font-size: 22px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* Media inside bubble */
+.bubble img,
+.bubble video {
+  max-width: 220px;
+  border-radius: 12px;
+  margin-top: 6px;
+}
+
+.bubble video {
+  controls: true;
+}
+

@@ -5,10 +5,9 @@ const io = require("socket.io")(http);
 
 app.use(express.static("public"));
 
-/* In-memory stores (MVP) */
-const users = {};        // { username: password }
-const onlineUsers = {}; // { socketId: username }
-const messages = [];    // chat history
+const users = {};
+const onlineUsers = {};
+const messages = []; // text + media history
 
 io.on("connection", socket => {
 
@@ -40,33 +39,49 @@ io.on("connection", socket => {
     io.emit("onlineCount", Object.keys(onlineUsers).length);
     socket.broadcast.emit("systemMessage", `${username} joined`);
 
-    // 🔥 SEND CHAT HISTORY
     cb({ ok: true, history: messages });
   });
 
-  /* ---------- MESSAGE ---------- */
+  /* ---------- TEXT MESSAGE ---------- */
   socket.on("chatMessage", (text, cb) => {
     if (!socket.username || !text) return;
 
     const msg = {
+      id: Date.now() + Math.random(),
       user: socket.username,
-      text,
+      type: "text",
+      content: text,
       time: new Date().toISOString()
     };
 
     messages.push(msg);
     io.emit("chatMessage", msg);
+    cb({ delivered: true });
+  });
 
+  /* ---------- MEDIA MESSAGE ---------- */
+  socket.on("mediaMessage", ({ type, data }, cb) => {
+    if (!socket.username || !data) return;
+
+    if (!["image", "video"].includes(type)) return;
+
+    const msg = {
+      id: Date.now() + Math.random(),
+      user: socket.username,
+      type,
+      content: data, // base64
+      time: new Date().toISOString()
+    };
+
+    messages.push(msg);
+    io.emit("chatMessage", msg);
     cb({ delivered: true });
   });
 
   /* ---------- TYPING ---------- */
   socket.on("typing", isTyping => {
     if (!socket.username) return;
-    socket.broadcast.emit("typing", {
-      user: socket.username,
-      isTyping
-    });
+    socket.broadcast.emit({ user: socket.username, isTyping });
   });
 
   /* ---------- DISCONNECT ---------- */
