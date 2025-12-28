@@ -33,7 +33,7 @@
   <div id="typing"></div>
 
   <form id="chat-form" class="input-bar">
-    <label for="file-input" class="attach">📎</label>
+    <button type="button" class="attach" onclick="document.getElementById('file-input').click()">📎</button>
     <input id="file-input" type="file" accept="image/*,video/*" hidden />
     <input id="message" placeholder="Type something…" autocomplete="off" />
     <button type="submit">⚡</button>

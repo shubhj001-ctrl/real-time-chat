@@ -25,6 +25,7 @@ const switchBtn = document.getElementById("switch-btn");
 const chatBox = document.getElementById("chat-box");
 const msgInput = document.getElementById("message");
 const fileInput = document.getElementById("file-input");
+const chatForm = document.getElementById("chat-form");
 const onlineCount = document.getElementById("online-count");
 
 /* ======================
@@ -34,7 +35,7 @@ authScreen.style.display = "flex";
 chatScreen.classList.remove("active");
 
 /* ======================
-   AUTO LOGIN
+   AUTO LOGIN (SAFE)
 ====================== */
 if (currentUser) {
   socket.emit(
@@ -69,7 +70,7 @@ switchBtn.onclick = () => {
 };
 
 /* ======================
-   LOGIN / SIGNUP ACTION
+   LOGIN / SIGNUP
 ====================== */
 primaryBtn.onclick = () => {
   const username = userInput.value.trim();
@@ -91,7 +92,7 @@ primaryBtn.onclick = () => {
         return;
       }
 
-      // Signup success → go back to login
+      // Signup success → back to login
       if (!isLogin) {
         authMsg.textContent = "✅ Signup successful. Please login.";
         authMsg.style.color = "lightgreen";
@@ -115,8 +116,9 @@ primaryBtn.onclick = () => {
 /* ======================
    SEND TEXT MESSAGE
 ====================== */
-document.getElementById("chat-form").onsubmit = e => {
+chatForm.onsubmit = e => {
   e.preventDefault();
+
   const text = msgInput.value.trim();
   if (!text) return;
 
@@ -125,16 +127,30 @@ document.getElementById("chat-form").onsubmit = e => {
 };
 
 /* ======================
-   SEND MEDIA
+   SEND MEDIA (FIXED)
 ====================== */
-fileInput.onchange = () => {
+fileInput.onchange = e => {
+  e.preventDefault();
+
   const file = fileInput.files[0];
   if (!file) return;
 
+  // Safety limit for Render free tier
+  if (file.size > 5 * 1024 * 1024) {
+    alert("File too large. Max 5MB allowed.");
+    fileInput.value = "";
+    return;
+  }
+
   const reader = new FileReader();
+
   reader.onload = () => {
     const type = file.type.startsWith("image") ? "image" : "video";
-    socket.emit("mediaMessage", { type, data: reader.result });
+
+    socket.emit("mediaMessage", {
+      type,
+      data: reader.result
+    });
   };
 
   reader.readAsDataURL(file);
@@ -144,7 +160,9 @@ fileInput.onchange = () => {
 /* ======================
    RECEIVE MESSAGE
 ====================== */
-socket.on("chatMessage", msg => addMessage(msg));
+socket.on("chatMessage", msg => {
+  addMessage(msg);
+});
 
 /* ======================
    ONLINE COUNT
@@ -183,7 +201,10 @@ function addMessage(msg) {
       ${!isMe ? `<div class="user">${msg.user}</div>` : ""}
       ${content}
       <div class="meta">
-        ${new Date(msg.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+        ${new Date(msg.time).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit"
+        })}
       </div>
     </div>
     ${isMe ? `<div class="avatar me">${currentUser[0].toUpperCase()}</div>` : ""}
