@@ -1,7 +1,12 @@
 const express = require("express");
 const app = express();
 const http = require("http").createServer(app);
-const io = require("socket.io")(http);
+
+const io = require("socket.io")(http, {
+  pingTimeout: 60000,      // allow 60s background
+  pingInterval: 25000,
+  maxHttpBufferSize: 5e6  // 5 MB hard limit
+});
 
 app.use(express.static("public"));
 
@@ -49,12 +54,15 @@ io.on("connection", socket => {
 
     messages.push(msg);
     io.emit("chatMessage", msg);
+
     cb?.({ delivered: true });
   });
 
   socket.on("disconnect", () => {
-    delete onlineUsers[socket.id];
-    io.emit("onlineCount", Object.keys(onlineUsers).length);
+    if (socket.username) {
+      delete onlineUsers[socket.id];
+      io.emit("onlineCount", Object.keys(onlineUsers).length);
+    }
   });
 });
 

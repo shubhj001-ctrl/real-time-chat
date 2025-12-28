@@ -1,8 +1,13 @@
-const socket = io();
+const socket = io({
+  reconnection: true,
+  reconnectionAttempts: Infinity,
+  reconnectionDelay: 1000
+});
 
 /* ---------- STATE ---------- */
 let isLogin = true;
 let currentUser = localStorage.getItem("vibeUser") || "";
+let isUploading = false;
 
 /* ---------- ELEMENTS ---------- */
 const authScreen = document.getElementById("auth-screen");
@@ -26,32 +31,26 @@ const onlineCount = document.getElementById("online-count");
 
 /* ---------- AUTO LOGIN ---------- */
 if (currentUser) {
-  socket.emit(
-    "login",
-    { username: currentUser, password: "__auto__" },
-    res => {
-      if (res.ok) {
-        authScreen.style.display = "none";
-        chatScreen.classList.add("active");
-        res.history.forEach(addMessage);
-      } else {
-        localStorage.removeItem("vibeUser");
-      }
+  socket.emit("login", { username: currentUser, password: "__auto__" }, res => {
+    if (res.ok) {
+      authScreen.style.display = "none";
+      chatScreen.classList.add("active");
+      res.history.forEach(addMessage);
+    } else {
+      localStorage.removeItem("vibeUser");
     }
-  );
+  });
 }
 
 /* ---------- AUTH TOGGLE ---------- */
 switchBtn.onclick = () => {
   isLogin = !isLogin;
-
   authTitle.textContent = isLogin ? "Welcome back 👋" : "Create account ✨";
   authSub.textContent = isLogin ? "Login to continue" : "Signup to get started";
   primaryBtn.textContent = isLogin ? "Login" : "Signup";
   switchBtn.textContent = isLogin
     ? "Don’t have an account? Signup"
     : "Already have an account? Login";
-
   authMsg.textContent = "";
 };
 
@@ -66,38 +65,36 @@ primaryBtn.onclick = () => {
     return;
   }
 
-  socket.emit(
-    isLogin ? "login" : "signup",
-    { username, password },
-    res => {
-      if (!res.ok) {
-        authMsg.textContent = res.msg;
-        authMsg.style.color = "red";
-        return;
-      }
-
-      if (!isLogin) {
-        authMsg.textContent = "✅ Signup successful. Please login.";
-        authMsg.style.color = "lightgreen";
-        isLogin = true;
-        switchBtn.click();
-        return;
-      }
-
-      currentUser = username;
-      localStorage.setItem("vibeUser", username);
-
-      authScreen.style.display = "none";
-      chatScreen.classList.add("active");
-
-      res.history.forEach(addMessage);
+  socket.emit(isLogin ? "login" : "signup", { username, password }, res => {
+    if (!res.ok) {
+      authMsg.textContent = res.msg;
+      authMsg.style.color = "red";
+      return;
     }
-  );
+
+    if (!isLogin) {
+      authMsg.textContent = "✅ Signup successful. Please login.";
+      authMsg.style.color = "lightgreen";
+      isLogin = true;
+      switchBtn.click();
+      return;
+    }
+
+    currentUser = username;
+    localStorage.setItem("vibeUser", username);
+
+    authScreen.style.display = "none";
+    chatScreen.classList.add("active");
+
+    res.history.forEach(addMessage);
+  });
 };
 
 /* ---------- SEND TEXT ---------- */
 chatForm.onsubmit = e => {
   e.preventDefault();
+  if (isUploading) return;
+
   const text = msgInput.value.trim();
   if (!text) return;
 
@@ -109,33 +106,42 @@ chatForm.onsubmit = e => {
   msgInput.value = "";
 };
 
-/* ---------- SEND MEDIA ---------- */
+/* ---------- SEND MEDIA (SAFE) ---------- */
 fileInput.onchange = () => {
   const file = fileInput.files[0];
   if (!file) return;
 
-  const type = file.type.startsWith("image/")
-    ? "image"
-    : file.type.startsWith("video/")
-    ? "video"
-    : null;
+  const isImage = file.type.startsWith("image/");
+  const isVideo = file.type.startsWith("video/");
 
-  if (!type) {
-    alert("Unsupported file type");
+  if (!isImage && !isVideo) {
+    alert("Unsupported file");
     return;
   }
 
-  if (file.size > 5 * 1024 * 1024) {
-    alert("Max 5MB allowed");
+  const maxSize = isImage ? 2 * 1024 * 1024 : 4 * 1024 * 1024;
+  if (file.size > maxSize) {
+    alert(isImage ? "Image max 2MB" : "Video max 4MB");
+    fileInput.value = "";
     return;
   }
+
+  isUploading = true;
+  msgInput.disabled = true;
 
   const reader = new FileReader();
   reader.onload = () => {
-    socket.emit("chatMessage", {
-      type,
-      content: reader.result
-    });
+    socket.emit(
+      "chatMessage",
+      {
+        type: isImage ? "image" : "video",
+        content: reader.result
+      },
+      () => {
+        isUploading = false;
+        msgInput.disabled = false;
+      }
+    );
   };
 
   reader.readAsDataURL(file);
