@@ -10,29 +10,30 @@
 <body>
 
 <!-- LOGIN SCREEN -->
-<div id="login-screen" class="login-screen">
+<div id="login-screen" class="screen">
   <div class="login-box">
-    <h1 class="logo">Veyon</h1>
-    <p class="tagline">Chat freely. Connect beyond the reach of others.</p>
+    <div class="brand-wrap">
+      <span class="brand-small">Welcome to</span>
+      <span class="brand-veyon">Veyon</span>
+      <p class="brand-hint">
+        Chat freely. Connect beyond the reach of others.
+      </p>
+    </div>
 
     <input id="username" placeholder="Username" />
     <input id="password" type="password" placeholder="Password" />
     <button id="login-btn">Enter Veyon</button>
+    <p id="login-msg"></p>
   </div>
 </div>
 
 <!-- APP -->
-<div id="app" class="app hidden">
+<div id="app" class="hidden">
 
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <h2>People</h2>
-    <input class="search" placeholder="Search people..." />
-
-    <div class="chat-list">
-      <div class="chat-card" data-user="boss">boss</div>
-      <div class="chat-card" data-user="weed">weed</div>
-    </div>
+    <ul id="user-list"></ul>
   </aside>
 
   <!-- CHAT AREA -->
@@ -43,8 +44,14 @@
     </header>
 
     <!-- WELCOME -->
-    <div id="chat-welcome" class="chat-welcome">
-      <p>Select someone from the left to start chatting.</p>
+    <div id="chat-welcome" class="welcome-screen">
+      <div class="brand-wrap">
+        <span class="brand-small">Welcome to</span>
+        <span class="brand-veyon">Veyon</span>
+        <p class="brand-hint">
+          Select someone to start chatting.
+        </p>
+      </div>
     </div>
 
     <!-- MESSAGES -->
@@ -59,6 +66,7 @@
   </main>
 </div>
 
+<script src="/socket.io/socket.io.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

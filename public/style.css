@@ -6,8 +6,8 @@
 
 html, body {
   height: 100%;
-  font-family: system-ui, sans-serif;
   background: radial-gradient(circle at top, #2e2b5f, #0e0c2a);
+  font-family: system-ui, sans-serif;
   color: white;
 }
 
@@ -16,7 +16,7 @@ html, body {
 }
 
 /* LOGIN */
-.login-screen {
+.screen {
   height: 100vh;
   display: flex;
   justify-content: center;
@@ -26,16 +26,6 @@ html, body {
 .login-box {
   width: 320px;
   text-align: center;
-}
-
-.logo {
-  font-size: 48px;
-}
-
-.tagline {
-  font-size: 14px;
-  opacity: 0.7;
-  margin-bottom: 20px;
 }
 
 .login-box input {
@@ -54,36 +44,52 @@ html, body {
   cursor: pointer;
 }
 
+/* BRAND */
+.brand-wrap {
+  margin-bottom: 24px;
+}
+
+.brand-small {
+  opacity: 0.6;
+}
+
+.brand-veyon {
+  font-family: "Segoe Script", cursive;
+  font-size: 48px;
+  transform: skew(-8deg);
+}
+
+.brand-hint {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
 /* APP */
-.app {
+#app {
   height: 100vh;
   display: flex;
 }
 
 /* SIDEBAR */
 .sidebar {
-  width: 260px;
+  width: 240px;
   background: rgba(255,255,255,0.05);
   padding: 16px;
 }
 
-.search {
-  width: 100%;
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
-  margin-bottom: 12px;
+.sidebar ul {
+  list-style: none;
 }
 
-.chat-card {
-  padding: 12px;
-  border-radius: 10px;
+.sidebar li {
+  padding: 10px;
+  border-radius: 8px;
   background: rgba(255,255,255,0.08);
   margin-bottom: 8px;
   cursor: pointer;
 }
 
-/* CHAT AREA */
+/* CHAT */
 .chat-area {
   flex: 1;
   display: flex;
@@ -91,17 +97,15 @@ html, body {
 }
 
 .chat-header {
-  height: 50px;
-  padding: 12px;
+  padding: 14px;
   background: rgba(255,255,255,0.05);
 }
 
-.chat-welcome {
+.welcome-screen {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.6;
 }
 
 .messages {
@@ -111,13 +115,13 @@ html, body {
 }
 
 .message {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .chat-input {
   display: flex;
-  gap: 10px;
   padding: 12px;
+  gap: 10px;
   background: rgba(0,0,0,0.4);
 }
 

@@ -1,80 +1,106 @@
-/* ===============================
-   ELEMENT REFERENCES
-================================ */
+const socket = io();
+
+/* ELEMENTS */
 const loginScreen = document.getElementById("login-screen");
 const app = document.getElementById("app");
-
-const chatWelcome = document.getElementById("chat-welcome");
-const messages = document.getElementById("messages");
-const chatInput = document.getElementById("chat-input");
-const chatTitle = document.getElementById("chat-title");
-
 const loginBtn = document.getElementById("login-btn");
+const loginMsg = document.getElementById("login-msg");
+
 const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
 
-const sendBtn = document.getElementById("send-btn");
+const userList = document.getElementById("user-list");
+const chatTitle = document.getElementById("chat-title");
+const chatWelcome = document.getElementById("chat-welcome");
+const messages = document.getElementById("messages");
+const chatInput = document.getElementById("chat-input");
 const messageInput = document.getElementById("message-input");
+const sendBtn = document.getElementById("send-btn");
 
-/* ===============================
-   STORAGE KEYS
-================================ */
-const USER_KEY = "veyon_user";
-const CHAT_KEY = "veyon_active_chat";
-const CHAT_STORE_KEY = "veyon_chats";
-
-/* ===============================
-   STATE
-================================ */
+/* STATE */
 let currentUser = null;
 let currentChat = null;
 
-/* ===============================
-   STORAGE HELPERS
-================================ */
-function loadAllChats() {
-  return JSON.parse(localStorage.getItem(CHAT_STORE_KEY)) || {};
+/* LOGIN */
+loginBtn.onclick = () => {
+  socket.emit(
+    "login",
+    {
+      username: usernameInput.value,
+      password: passwordInput.value
+    },
+    res => {
+      if (!res.ok) {
+        loginMsg.innerText = res.msg;
+        return;
+      }
+
+      currentUser = usernameInput.value;
+      loginScreen.classList.add("hidden");
+      app.classList.remove("hidden");
+
+      renderUsers(res.users);
+      showWelcome();
+    }
+  );
+};
+
+/* USERS */
+function renderUsers(users) {
+  userList.innerHTML = "";
+  users.forEach(u => {
+    const li = document.createElement("li");
+    li.innerText = u;
+    li.onclick = () => openChat(u);
+    userList.appendChild(li);
+  });
 }
 
-function saveAllChats(data) {
-  localStorage.setItem(CHAT_STORE_KEY, JSON.stringify(data));
+/* CHAT */
+function openChat(user) {
+  currentChat = user;
+  chatTitle.innerText = user;
+  showChatUI();
+
+  socket.emit("loadChat", { withUser: user }, res => {
+    messages.innerHTML = "";
+    res.history.forEach(m => addMessage(m));
+  });
 }
 
-function getChatHistory(user, peer) {
-  const allChats = loadAllChats();
-  if (!allChats[user]) return [];
-  if (!allChats[user][peer]) return [];
-  return allChats[user][peer];
-}
+/* SEND */
+sendBtn.onclick = () => {
+  if (!messageInput.value || !currentChat) return;
+  socket.emit("sendMessage", {
+    to: currentChat,
+    text: messageInput.value
+  });
+  messageInput.value = "";
+};
 
-function saveMessage(user, peer, message) {
-  const allChats = loadAllChats();
+/* RECEIVE */
+socket.on("message", msg => {
+  if (
+    (msg.from === currentUser && msg.to === currentChat) ||
+    (msg.from === currentChat && msg.to === currentUser)
+  ) {
+    addMessage(msg);
+  }
+});
 
-  if (!allChats[user]) allChats[user] = {};
-  if (!allChats[user][peer]) allChats[user][peer] = [];
-
-  allChats[user][peer].push(message);
-  saveAllChats(allChats);
-}
-
-/* ===============================
-   VIEW CONTROLLERS
-================================ */
-function showLogin() {
-  loginScreen.classList.remove("hidden");
-  app.classList.add("hidden");
-}
-
-function showAppShell() {
-  loginScreen.classList.add("hidden");
-  app.classList.remove("hidden");
+/* UI HELPERS */
+function addMessage(msg) {
+  const div = document.createElement("div");
+  div.className = "message";
+  div.innerText = `${msg.from}: ${msg.text}`;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
 }
 
 function showWelcome() {
   chatWelcome.classList.remove("hidden");
   messages.classList.add("hidden");
   chatInput.classList.add("hidden");
-  chatTitle.innerText = "Welcome";
 }
 
 function showChatUI() {
@@ -82,107 +108,3 @@ function showChatUI() {
   messages.classList.remove("hidden");
   chatInput.classList.remove("hidden");
 }
-
-/* ===============================
-   CHAT LOGIC
-================================ */
-function openChat(username) {
-  currentChat = username;
-  localStorage.setItem(CHAT_KEY, username);
-
-  chatTitle.innerText = username;
-  showChatUI();
-  renderChatHistory();
-}
-
-/* ===============================
-   RENDER CHAT
-================================ */
-function renderChatHistory() {
-  messages.innerHTML = "";
-
-  const history = getChatHistory(currentUser, currentChat);
-
-  history.forEach(msg => {
-    const div = document.createElement("div");
-    div.className = "message";
-    div.innerText = msg.text;
-    messages.appendChild(div);
-  });
-
-  messages.scrollTop = messages.scrollHeight;
-}
-
-/* ===============================
-   LOGIN HANDLING
-================================ */
-loginBtn.onclick = () => {
-  const user = usernameInput.value.trim();
-  const pass = passwordInput.value.trim();
-
-  if (!user || !pass) {
-    alert("Please enter username and password");
-    return;
-  }
-
-  currentUser = user;
-  localStorage.setItem(USER_KEY, user);
-  localStorage.removeItem(CHAT_KEY); // 🔑 important
-
-  showAppShell();
-  showWelcome();
-};
-
-/* ===============================
-   SEND MESSAGE
-================================ */
-sendBtn.onclick = () => {
-  const text = messageInput.value.trim();
-  if (!text || !currentChat) return;
-
-  const message = {
-    from: currentUser,
-    text,
-    time: Date.now()
-  };
-
-  saveMessage(currentUser, currentChat, message);
-  saveMessage(currentChat, currentUser, message);
-
-  messageInput.value = "";
-  renderChatHistory();
-};
-
-/* ===============================
-   CHAT LIST CLICK
-================================ */
-document.querySelectorAll(".chat-card").forEach(card => {
-  card.onclick = () => {
-    openChat(card.dataset.user);
-  };
-});
-
-/* ===============================
-   APP INIT (ON PAGE LOAD)
-================================ */
-(function initApp() {
-  const savedUser = localStorage.getItem(USER_KEY);
-  const savedChat = localStorage.getItem(CHAT_KEY);
-
-  // FIRST VISIT → LOGIN
-  if (!savedUser) {
-    showLogin();
-    return;
-  }
-
-  // USER EXISTS
-  currentUser = savedUser;
-  showAppShell();
-
-  // RESTORE CHAT OR SHOW WELCOME
-  if (savedChat) {
-    openChat(savedChat);
-  } else {
-    showWelcome();
-  }
-})();
