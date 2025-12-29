@@ -233,3 +233,77 @@ body {
     display: none !important;
   }
 }
+/* ---------- WELCOME ---------- */
+.welcome-screen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.welcome-wrap {
+  text-align: center;
+  user-select: none;
+}
+
+.welcome-small {
+  display: block;
+  font-size: 16px;
+  opacity: 0.7;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+/* VEYON RIBBON */
+.welcome-veyon {
+  display: inline-block;
+  font-size: 72px;
+  font-weight: 600;
+  font-family: "Segoe Script", "Pacifico", cursive;
+  transform: skew(-8deg);
+  cursor: pointer;
+  color: #ffffff;
+  transition: transform 0.3s ease;
+  position: relative;
+}
+
+/* hover = micro delight */
+.welcome-veyon:hover {
+  transform: skew(-8deg) scale(1.02);
+}
+
+/* ACTIVE GLOW */
+.welcome-veyon.glow {
+  background: linear-gradient(
+    120deg,
+    #7aa2ff,
+    #8fd3f4,
+    #c77dff,
+    #7aa2ff
+  );
+  background-size: 300%;
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: veyonGlow 2.5s ease-in-out infinite;
+}
+
+/* HINT */
+.welcome-hint {
+  margin-top: 14px;
+  font-size: 14px;
+  opacity: 0.65;
+}
+
+/* GLOW ANIMATION */
+@keyframes veyonGlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
