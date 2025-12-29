@@ -110,7 +110,7 @@ function openChat(user) {
 }
 
 /* ---------------------------
-   SEND MESSAGE (FIXED)
+   SEND MESSAGE (FIXED UX)
 ---------------------------- */
 sendBtn.onclick = sendMessage;
 messageInput.onkeydown = e => {
@@ -121,6 +121,9 @@ function sendMessage() {
   const text = messageInput.value.trim();
   if (!text || !currentChat) return;
 
+  // ✅ Clear input immediately (UX fix)
+  messageInput.value = "";
+
   const msg = {
     from: currentUser,
     to: currentChat,
@@ -130,9 +133,7 @@ function sendMessage() {
 
   socket.emit("sendMessage", msg, res => {
     if (!res || !res.ok) return;
-
     renderMessage(msg);
-    messageInput.value = "";
   });
 }
 
