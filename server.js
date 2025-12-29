@@ -11,19 +11,19 @@ const io = require("socket.io")(http, {
 app.use(express.static("public"));
 
 /* ======================
-   LOAD PRIVATE USERS
+   PRIVATE USERS
 ====================== */
 const defaultUsers = require("./defaultUsers");
 const users = { ...defaultUsers };
 
 /* ======================
-   IN-MEMORY STORES
+   MEMORY STORES
 ====================== */
 const onlineUsers = {};
 const messages = [];
 
 /* ======================
-   SOCKET HANDLERS
+   SOCKET LOGIC
 ====================== */
 io.on("connection", socket => {
 
@@ -41,19 +41,18 @@ io.on("connection", socket => {
     onlineUsers[socket.id] = username;
 
     io.emit("onlineCount", Object.keys(onlineUsers).length);
-
     cb?.({ ok: true, history: messages });
   });
 
-  /* ---------- SIGNUP DISABLED ---------- */
-  socket.on("signup", (_, cb) => {
-    cb?.({ ok: false, msg: "Signup disabled" });
+  /* ---------- KEEP ALIVE (IMPORTANT) ---------- */
+  socket.on("keepAlive", () => {
+    // do nothing — this keeps the socket active
+    // intentionally silent
   });
 
-  /* ---------- CHAT MESSAGE (WITH REPLY) ---------- */
+  /* ---------- CHAT ---------- */
   socket.on("chatMessage", (data, cb) => {
-    if (!socket.username) return;
-    if (!data?.type || !data?.content) return;
+    if (!socket.username || !data?.type || !data?.content) return;
 
     const msg = {
       id: Date.now() + Math.random(),
@@ -66,7 +65,6 @@ io.on("connection", socket => {
 
     messages.push(msg);
     io.emit("chatMessage", msg);
-
     cb?.({ delivered: true });
   });
 

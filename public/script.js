@@ -7,10 +7,10 @@ const socket = io({
 /* ======================
    STATE
 ====================== */
-let isLogin = true;
 let currentUser = "";
 let isUploading = false;
 let replyContext = null;
+let keepAliveTimer = null;
 
 /* ======================
    ELEMENTS
@@ -18,15 +18,10 @@ let replyContext = null;
 const authScreen = document.getElementById("auth-screen");
 const chatScreen = document.getElementById("chat-screen");
 
-const authTitle = document.getElementById("auth-title");
-const authSub = document.getElementById("auth-sub");
 const authMsg = document.getElementById("auth-msg");
-
 const userInput = document.getElementById("auth-user");
 const passInput = document.getElementById("auth-pass");
-
 const primaryBtn = document.getElementById("primary-btn");
-const switchBtn = document.getElementById("switch-btn");
 
 const chatBox = document.getElementById("chat-box");
 const msgInput = document.getElementById("message");
@@ -40,20 +35,26 @@ const replyText = document.getElementById("reply-text");
 const cancelReply = document.getElementById("cancel-reply");
 
 /* ======================
-   INITIAL UI
+   KEEP ALIVE (CRITICAL)
 ====================== */
-authScreen.style.display = "flex";
-chatScreen.classList.remove("active");
+function startKeepAlive() {
+  stopKeepAlive();
+  keepAliveTimer = setInterval(() => {
+    if (socket.connected) {
+      socket.emit("keepAlive");
+    }
+  }, 20000); // every 20 seconds
+}
+
+function stopKeepAlive() {
+  if (keepAliveTimer) {
+    clearInterval(keepAliveTimer);
+    keepAliveTimer = null;
+  }
+}
 
 /* ======================
-   AUTH TOGGLE
-====================== */
-switchBtn.onclick = () => {
-  authMsg.textContent = "";
-};
-
-/* ======================
-   LOGIN ONLY (PRIVATE BETA)
+   LOGIN
 ====================== */
 primaryBtn.onclick = () => {
   const username = userInput.value.trim();
@@ -67,7 +68,7 @@ primaryBtn.onclick = () => {
 
   socket.emit("login", { username, password }, res => {
     if (!res?.ok) {
-      authMsg.textContent = res?.msg || "Login failed";
+      authMsg.textContent = res.msg || "Login failed";
       authMsg.style.color = "red";
       return;
     }
@@ -78,8 +79,27 @@ primaryBtn.onclick = () => {
     chatScreen.classList.add("active");
 
     renderHistory(res.history);
+    startKeepAlive();
   });
 };
+
+/* ======================
+   AUTO REJOIN AFTER DISCONNECT
+====================== */
+socket.on("connect", () => {
+  if (currentUser) {
+    socket.emit("login", { username: currentUser, password: "jaggibaba" }, res => {
+      if (res?.ok) {
+        renderHistory(res.history);
+        startKeepAlive();
+      }
+    });
+  }
+});
+
+socket.on("disconnect", () => {
+  stopKeepAlive();
+});
 
 /* ======================
    SEND TEXT
@@ -127,19 +147,14 @@ fileInput.onchange = () => {
 
   const reader = new FileReader();
   reader.onload = () => {
-    socket.emit(
-      "chatMessage",
-      {
-        type: isImage ? "image" : "video",
-        content: reader.result,
-        replyTo: replyContext
-      },
-      () => {
-        isUploading = false;
-        msgInput.disabled = false;
-      }
-    );
+    socket.emit("chatMessage", {
+      type: isImage ? "image" : "video",
+      content: reader.result,
+      replyTo: replyContext
+    });
 
+    isUploading = false;
+    msgInput.disabled = false;
     clearReply();
   };
 
@@ -148,7 +163,7 @@ fileInput.onchange = () => {
 };
 
 /* ======================
-   RECEIVE MESSAGE
+   RECEIVE
 ====================== */
 socket.on("chatMessage", msg => addMessage(msg));
 
@@ -157,7 +172,7 @@ socket.on("onlineCount", n => {
 });
 
 /* ======================
-   REPLY LOGIC
+   REPLY
 ====================== */
 cancelReply.onclick = clearReply;
 
@@ -181,7 +196,7 @@ function clearReply() {
 }
 
 /* ======================
-   RENDER HELPERS
+   RENDER
 ====================== */
 function renderHistory(history = []) {
   chatBox.innerHTML = "";
@@ -204,26 +219,18 @@ function addMessage(msg) {
     replyHtml = `
       <div class="reply-preview">
         <strong>${msg.replyTo.user}</strong><br/>
-        <span>${
-          msg.replyTo.type === "text"
-            ? msg.replyTo.content
-            : msg.replyTo.type.toUpperCase()
-        }</span>
+        <span>${msg.replyTo.type === "text" ? msg.replyTo.content : msg.replyTo.type.toUpperCase()}</span>
       </div>
     `;
   }
 
   row.innerHTML = `
-    ${!isMe ? `<div class="avatar other">${msg.user[0].toUpperCase()}</div>` : ""}
     <div class="bubble ${isMe ? "me" : "other"}">
       ${replyHtml}
       ${content}
-      <div class="meta">
-        ${new Date(msg.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-      </div>
+      <div class="meta">${new Date(msg.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
       <button class="reply-btn">↩️</button>
     </div>
-    ${isMe ? `<div class="avatar me">${currentUser[0].toUpperCase()}</div>` : ""}
   `;
 
   row.querySelector(".reply-btn").onclick = () => setReply(msg);
