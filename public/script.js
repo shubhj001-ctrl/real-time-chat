@@ -4,7 +4,7 @@ const socket = io();
 let currentUser = null;
 let activeChatUser = null;
 let replyContext = null;
-let appReady = false;
+let unreadCounts = {};
 
 /* ================= ELEMENTS ================= */
 const authScreen = document.getElementById("auth-screen");
@@ -32,7 +32,6 @@ const LS_USER = "vibechat_user";
 const LS_ACTIVE_CHAT = "vibechat_active_chat";
 
 /* ================= INITIAL UI STATE ================= */
-// 🔒 Hide everything until we decide
 authScreen.style.display = "none";
 chatScreen.style.display = "none";
 
@@ -52,13 +51,11 @@ document.addEventListener("DOMContentLoaded", () => {
 function showLogin() {
   authScreen.style.display = "flex";
   chatScreen.style.display = "none";
-  appReady = true;
 }
 
 function showChat() {
   authScreen.style.display = "none";
   chatScreen.style.display = "flex";
-  appReady = true;
 }
 
 /* ================= LOGIN ================= */
@@ -81,6 +78,7 @@ loginBtn.onclick = () => {
     localStorage.setItem(LS_USER, username);
 
     showChat();
+    initUnreadCounts(res.users);
     renderUserList(res.users);
   });
 };
@@ -96,6 +94,7 @@ function autoLogin(username, savedChat) {
 
     currentUser = username;
     showChat();
+    initUnreadCounts(res.users);
     renderUserList(res.users);
 
     if (savedChat) {
@@ -104,14 +103,42 @@ function autoLogin(username, savedChat) {
   });
 }
 
+/* ================= UNREAD INIT ================= */
+function initUnreadCounts(users) {
+  unreadCounts = {};
+  users.forEach(u => (unreadCounts[u] = 0));
+}
+
 /* ================= USERS ================= */
 function renderUserList(users) {
   userList.innerHTML = "";
+
   users.forEach(u => {
     const li = document.createElement("li");
-    li.textContent = u;
+    li.dataset.user = u;
+    li.innerHTML = `
+      <span class="user-name">${u}</span>
+      <span class="unread-badge" style="display:none"></span>
+    `;
     li.onclick = () => openChat(u);
     userList.appendChild(li);
+  });
+
+  updateUnreadBadges();
+}
+
+/* ================= UPDATE BADGES ================= */
+function updateUnreadBadges() {
+  document.querySelectorAll("#user-list li").forEach(li => {
+    const user = li.dataset.user;
+    const badge = li.querySelector(".unread-badge");
+
+    if (unreadCounts[user] > 0) {
+      badge.textContent = unreadCounts[user];
+      badge.style.display = "inline-flex";
+    } else {
+      badge.style.display = "none";
+    }
   });
 }
 
@@ -119,6 +146,9 @@ function renderUserList(users) {
 function openChat(user) {
   activeChatUser = user;
   localStorage.setItem(LS_ACTIVE_CHAT, user);
+
+  unreadCounts[user] = 0;
+  updateUnreadBadges();
 
   chatHeader.textContent = user;
   chatBox.innerHTML = "";
@@ -152,6 +182,14 @@ chatForm.onsubmit = e => {
 
 /* ================= RECEIVE MESSAGE ================= */
 socket.on("privateMessage", msg => {
+  const isForMe =
+    msg.to === currentUser && msg.from !== activeChatUser;
+
+  if (isForMe) {
+    unreadCounts[msg.from] = (unreadCounts[msg.from] || 0) + 1;
+    updateUnreadBadges();
+  }
+
   if (
     (msg.from === currentUser && msg.to === activeChatUser) ||
     (msg.from === activeChatUser && msg.to === currentUser)
