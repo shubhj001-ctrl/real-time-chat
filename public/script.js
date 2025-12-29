@@ -10,15 +10,37 @@ const userList = document.getElementById("user-list");
 const chatBox = document.getElementById("chat-box");
 const chatTitle = document.getElementById("chat-title");
 const messageInput = document.getElementById("message-input");
+const sendBtn = document.getElementById("send-btn");
 
+/* ---------------------------
+   INITIAL LOAD (AUTO LOGIN)
+---------------------------- */
 if (currentUser) {
   loginView.style.display = "none";
   appView.style.display = "flex";
+
+  // 🔑 Silent re-login to restore socket state
+  socket.emit(
+    "login",
+    { username: currentUser, password: "jaggibaba" },
+    res => {
+      if (!res.ok) {
+        logout();
+        return;
+      }
+      renderUsers(res.users);
+    }
+  );
 }
 
+/* ---------------------------
+   MANUAL LOGIN
+---------------------------- */
 document.getElementById("login-btn").onclick = () => {
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  if (!username || !password) return alert("Enter credentials");
 
   socket.emit("login", { username, password }, res => {
     if (!res.ok) return alert("Invalid login");
@@ -33,6 +55,9 @@ document.getElementById("login-btn").onclick = () => {
   });
 };
 
+/* ---------------------------
+   USERS LIST
+---------------------------- */
 function renderUsers(users) {
   userList.innerHTML = "";
   users.forEach(u => {
@@ -48,6 +73,9 @@ function renderUsers(users) {
   updatePresenceUI();
 }
 
+/* ---------------------------
+   OPEN CHAT
+---------------------------- */
 function openChat(user) {
   currentChat = user;
   chatTitle.innerText = user;
@@ -63,16 +91,22 @@ function openChat(user) {
   updatePresenceUI();
 }
 
-document.getElementById("send-btn").onclick = sendMessage;
-messageInput.onkeydown = e => e.key === "Enter" && sendMessage();
+/* ---------------------------
+   SEND MESSAGE
+---------------------------- */
+sendBtn.onclick = sendMessage;
+messageInput.onkeydown = e => {
+  if (e.key === "Enter") sendMessage();
+};
 
 function sendMessage() {
-  if (!messageInput.value || !currentChat) return;
+  const text = messageInput.value.trim();
+  if (!text || !currentChat) return;
 
   const msg = {
     from: currentUser,
     to: currentChat,
-    text: messageInput.value,
+    text,
     time: Date.now()
   };
 
@@ -81,6 +115,9 @@ function sendMessage() {
   messageInput.value = "";
 }
 
+/* ---------------------------
+   RECEIVE MESSAGE
+---------------------------- */
 socket.on("message", msg => {
   if (
     (msg.from === currentUser && msg.to === currentChat) ||
@@ -93,6 +130,9 @@ socket.on("message", msg => {
   }
 });
 
+/* ---------------------------
+   RENDER MESSAGE
+---------------------------- */
 function renderMessage(msg) {
   const div = document.createElement("div");
   div.className = msg.from === currentUser ? "msg me" : "msg";
@@ -101,6 +141,9 @@ function renderMessage(msg) {
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
+/* ---------------------------
+   PRESENCE
+---------------------------- */
 socket.on("presence", users => {
   onlineSet = new Set(users);
   updatePresenceUI();
@@ -115,4 +158,12 @@ function updatePresenceUI() {
   if (headerDot && currentChat) {
     headerDot.classList.toggle("online", onlineSet.has(currentChat));
   }
+}
+
+/* ---------------------------
+   LOGOUT (SAFETY)
+---------------------------- */
+function logout() {
+  localStorage.removeItem("user");
+  location.reload();
 }
