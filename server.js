@@ -11,19 +11,26 @@ const io = require("socket.io")(http, {
 app.use(express.static("public"));
 
 /* ======================
-   PRIVATE USERS
+   USERS (PRIVATE BETA)
 ====================== */
 const defaultUsers = require("./defaultUsers");
 const users = { ...defaultUsers };
 
 /* ======================
-   MEMORY STORES
+   STATE
 ====================== */
-const onlineUsers = {};
-const messages = [];
+const onlineUsers = {}; // socket.id -> username
+const conversations = {}; // convoId -> messages[]
 
 /* ======================
-   SOCKET LOGIC
+   HELPERS
+====================== */
+function getConvoId(u1, u2) {
+  return [u1, u2].sort().join("__");
+}
+
+/* ======================
+   SOCKET
 ====================== */
 io.on("connection", socket => {
 
@@ -32,7 +39,6 @@ io.on("connection", socket => {
     if (!users[username]) {
       return cb?.({ ok: false, msg: "Access denied" });
     }
-
     if (users[username] !== password) {
       return cb?.({ ok: false, msg: "Invalid password" });
     }
@@ -40,47 +46,60 @@ io.on("connection", socket => {
     socket.username = username;
     onlineUsers[socket.id] = username;
 
-    io.emit("onlineCount", Object.keys(onlineUsers).length);
-    cb?.({ ok: true, history: messages });
+    io.emit("onlineUsers", Object.values(onlineUsers));
+
+    cb?.({ ok: true, users: Object.keys(users).filter(u => u !== username) });
   });
 
-  /* ---------- KEEP ALIVE (IMPORTANT) ---------- */
-  socket.on("keepAlive", () => {
-    // do nothing — this keeps the socket active
-    // intentionally silent
+  /* ---------- LOAD CHAT ---------- */
+  socket.on("loadChat", ({ withUser }, cb) => {
+    if (!socket.username) return;
+
+    const convoId = getConvoId(socket.username, withUser);
+    conversations[convoId] ??= [];
+
+    cb?.({ history: conversations[convoId] });
   });
 
-  /* ---------- CHAT ---------- */
-  socket.on("chatMessage", (data, cb) => {
-    if (!socket.username || !data?.type || !data?.content) return;
+  /* ---------- SEND MESSAGE ---------- */
+  socket.on("privateMessage", ({ to, message }, cb) => {
+    if (!socket.username || !users[to]) return;
+
+    const convoId = getConvoId(socket.username, to);
 
     const msg = {
       id: Date.now() + Math.random(),
-      user: socket.username,
-      type: data.type,
-      content: data.content,
-      replyTo: data.replyTo || null,
+      from: socket.username,
+      to,
+      type: message.type,
+      content: message.content,
       time: new Date().toISOString()
     };
 
-    messages.push(msg);
-    io.emit("chatMessage", msg);
+    conversations[convoId] ??= [];
+    conversations[convoId].push(msg);
+
+    // Send to both users
+    for (const [sid, user] of Object.entries(onlineUsers)) {
+      if (user === socket.username || user === to) {
+        io.to(sid).emit("privateMessage", msg);
+      }
+    }
+
     cb?.({ delivered: true });
   });
 
   /* ---------- DISCONNECT ---------- */
   socket.on("disconnect", () => {
-    if (socket.username) {
-      delete onlineUsers[socket.id];
-      io.emit("onlineCount", Object.keys(onlineUsers).length);
-    }
+    delete onlineUsers[socket.id];
+    io.emit("onlineUsers", Object.values(onlineUsers));
   });
 });
 
 /* ======================
-   START SERVER
+   START
 ====================== */
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
-  console.log("Server running on port", PORT);
+  console.log("Server running on", PORT);
 });

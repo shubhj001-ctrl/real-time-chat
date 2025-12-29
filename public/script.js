@@ -8,99 +8,42 @@ const socket = io({
    STATE
 ====================== */
 let currentUser = "";
+let activeChatUser = null;
 let isUploading = false;
 let replyContext = null;
-let keepAliveTimer = null;
 
 /* ======================
-   ELEMENTS
+   AUTH ELEMENTS
 ====================== */
 const authScreen = document.getElementById("auth-screen");
 const chatScreen = document.getElementById("chat-screen");
-
 const authMsg = document.getElementById("auth-msg");
 const userInput = document.getElementById("auth-user");
 const passInput = document.getElementById("auth-pass");
-const primaryBtn = document.getElementById("primary-btn");
+const loginBtn = document.getElementById("primary-btn");
 
+/* ======================
+   CHAT ELEMENTS
+====================== */
+const userList = document.getElementById("user-list");
+const chatHeader = document.getElementById("chat-header");
 const chatBox = document.getElementById("chat-box");
+const chatForm = document.getElementById("chat-form");
 const msgInput = document.getElementById("message");
 const fileInput = document.getElementById("file-input");
-const chatForm = document.getElementById("chat-form");
-const onlineCount = document.getElementById("online-count");
 
+/* ======================
+   REPLY UI
+====================== */
 const replyBar = document.getElementById("reply-bar");
 const replyUser = document.getElementById("reply-user");
 const replyText = document.getElementById("reply-text");
 const cancelReply = document.getElementById("cancel-reply");
 
-/* === NEW STATUS ELEMENTS === */
-const badge = document.getElementById("connection-badge");
-const statusDot = document.getElementById("status-dot");
-const statusText = document.getElementById("status-text");
-
-/* ======================
-   STATUS HELPERS
-====================== */
-function setOnline() {
-  badge.classList.add("hidden");
-  statusDot.classList.remove("offline");
-  statusDot.classList.add("online");
-  statusText.textContent = "Online";
-}
-
-function setOffline() {
-  badge.classList.remove("hidden");
-  statusDot.classList.remove("online");
-  statusDot.classList.add("offline");
-  statusText.textContent = "Offline";
-}
-
-/* ======================
-   KEEP ALIVE
-====================== */
-function startKeepAlive() {
-  stopKeepAlive();
-  keepAliveTimer = setInterval(() => {
-    if (socket.connected) socket.emit("keepAlive");
-  }, 20000);
-}
-
-function stopKeepAlive() {
-  if (keepAliveTimer) {
-    clearInterval(keepAliveTimer);
-    keepAliveTimer = null;
-  }
-}
-
-/* ======================
-   SOCKET STATUS EVENTS
-====================== */
-socket.on("connect", () => {
-  setOnline();
-  if (currentUser) {
-    socket.emit(
-      "login",
-      { username: currentUser, password: "jaggibaba" },
-      res => {
-        if (res?.ok) {
-          renderHistory(res.history);
-          startKeepAlive();
-        }
-      }
-    );
-  }
-});
-
-socket.on("disconnect", () => {
-  setOffline();
-  stopKeepAlive();
-});
-
 /* ======================
    LOGIN
 ====================== */
-primaryBtn.onclick = () => {
+loginBtn.onclick = () => {
   const username = userInput.value.trim();
   const password = passInput.value.trim();
 
@@ -121,26 +64,54 @@ primaryBtn.onclick = () => {
     authScreen.style.display = "none";
     chatScreen.classList.add("active");
 
-    renderHistory(res.history);
-    startKeepAlive();
-    setOnline();
+    renderUserList(res.users);
   });
 };
 
 /* ======================
-   SEND TEXT
+   USER LIST
+====================== */
+function renderUserList(users) {
+  userList.innerHTML = "";
+  users.forEach(user => {
+    const li = document.createElement("li");
+    li.textContent = user;
+    li.onclick = () => openChat(user);
+    userList.appendChild(li);
+  });
+}
+
+/* ======================
+   OPEN PRIVATE CHAT
+====================== */
+function openChat(user) {
+  activeChatUser = user;
+  chatHeader.textContent = `Chat with ${user}`;
+  chatBox.innerHTML = "";
+  clearReply();
+
+  socket.emit("loadChat", { withUser: user }, res => {
+    res.history.forEach(addMessage);
+  });
+}
+
+/* ======================
+   SEND TEXT MESSAGE
 ====================== */
 chatForm.onsubmit = e => {
   e.preventDefault();
-  if (isUploading) return;
+  if (!activeChatUser || isUploading) return;
 
   const text = msgInput.value.trim();
   if (!text) return;
 
-  socket.emit("chatMessage", {
-    type: "text",
-    content: text,
-    replyTo: replyContext
+  socket.emit("privateMessage", {
+    to: activeChatUser,
+    message: {
+      type: "text",
+      content: text,
+      replyTo: replyContext
+    }
   });
 
   clearReply();
@@ -151,6 +122,8 @@ chatForm.onsubmit = e => {
    SEND MEDIA
 ====================== */
 fileInput.onchange = () => {
+  if (!activeChatUser) return;
+
   const file = fileInput.files[0];
   if (!file) return;
 
@@ -158,7 +131,7 @@ fileInput.onchange = () => {
   const isVideo = file.type.startsWith("video/");
 
   if (!isImage && !isVideo) {
-    alert("Unsupported file");
+    alert("Unsupported file type");
     return;
   }
 
@@ -173,10 +146,13 @@ fileInput.onchange = () => {
 
   const reader = new FileReader();
   reader.onload = () => {
-    socket.emit("chatMessage", {
-      type: isImage ? "image" : "video",
-      content: reader.result,
-      replyTo: replyContext
+    socket.emit("privateMessage", {
+      to: activeChatUser,
+      message: {
+        type: isImage ? "image" : "video",
+        content: reader.result,
+        replyTo: replyContext
+      }
     });
 
     isUploading = false;
@@ -189,27 +165,30 @@ fileInput.onchange = () => {
 };
 
 /* ======================
-   RECEIVE
+   RECEIVE PRIVATE MESSAGE
 ====================== */
-socket.on("chatMessage", msg => addMessage(msg));
-
-socket.on("onlineCount", n => {
-  onlineCount.textContent = `🟢 ${n} online`;
+socket.on("privateMessage", msg => {
+  if (
+    (msg.from === currentUser && msg.to === activeChatUser) ||
+    (msg.from === activeChatUser && msg.to === currentUser)
+  ) {
+    addMessage(msg);
+  }
 });
 
 /* ======================
-   REPLY
+   REPLY HANDLING
 ====================== */
 cancelReply.onclick = clearReply;
 
 function setReply(msg) {
   replyContext = {
-    user: msg.user,
+    user: msg.from,
     type: msg.type,
     content: msg.content
   };
 
-  replyUser.textContent = msg.user;
+  replyUser.textContent = msg.from;
   replyText.textContent =
     msg.type === "text" ? msg.content : msg.type.toUpperCase();
 
@@ -222,30 +201,32 @@ function clearReply() {
 }
 
 /* ======================
-   RENDER
+   RENDER MESSAGE
 ====================== */
-function renderHistory(history = []) {
-  chatBox.innerHTML = "";
-  history.forEach(addMessage);
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
 function addMessage(msg) {
-  const isMe = msg.user === currentUser;
+  const isMe = msg.from === currentUser;
   const row = document.createElement("div");
   row.className = `message-row ${isMe ? "me" : "other"}`;
 
   let content = "";
-  if (msg.type === "text") content = `<div class="text">${msg.content}</div>`;
-  if (msg.type === "image") content = `<img src="${msg.content}" />`;
-  if (msg.type === "video") content = `<video src="${msg.content}" controls></video>`;
+  if (msg.type === "text") {
+    content = `<div class="text">${msg.content}</div>`;
+  } else if (msg.type === "image") {
+    content = `<img src="${msg.content}" />`;
+  } else if (msg.type === "video") {
+    content = `<video src="${msg.content}" controls></video>`;
+  }
 
   let replyHtml = "";
   if (msg.replyTo) {
     replyHtml = `
       <div class="reply-preview">
         <strong>${msg.replyTo.user}</strong><br/>
-        <span>${msg.replyTo.type === "text" ? msg.replyTo.content : msg.replyTo.type.toUpperCase()}</span>
+        <span>${
+          msg.replyTo.type === "text"
+            ? msg.replyTo.content
+            : msg.replyTo.type.toUpperCase()
+        }</span>
       </div>
     `;
   }
@@ -254,10 +235,12 @@ function addMessage(msg) {
     <div class="bubble ${isMe ? "me" : "other"}">
       ${replyHtml}
       ${content}
-      <div class="meta">${new Date(msg.time).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      })}</div>
+      <div class="meta">
+        ${new Date(msg.time).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit"
+        })}
+      </div>
       <button class="reply-btn">↩️</button>
     </div>
   `;
