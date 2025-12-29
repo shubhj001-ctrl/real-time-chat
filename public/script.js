@@ -58,19 +58,19 @@ function saveMessage(user, peer, message) {
 }
 
 /* ===============================
-   VIEW HELPERS
+   VIEW CONTROLLERS
 ================================ */
 function showLogin() {
   loginScreen.classList.remove("hidden");
   app.classList.add("hidden");
 }
 
-function showApp() {
+function showAppShell() {
   loginScreen.classList.add("hidden");
   app.classList.remove("hidden");
 }
 
-function showChatWelcome() {
+function showWelcome() {
   chatWelcome.classList.remove("hidden");
   messages.classList.add("hidden");
   chatInput.classList.add("hidden");
@@ -92,12 +92,11 @@ function openChat(username) {
 
   chatTitle.innerText = username;
   showChatUI();
-
   renderChatHistory();
 }
 
 /* ===============================
-   RENDER MESSAGES
+   RENDER CHAT
 ================================ */
 function renderChatHistory() {
   messages.innerHTML = "";
@@ -128,13 +127,14 @@ loginBtn.onclick = () => {
 
   currentUser = user;
   localStorage.setItem(USER_KEY, user);
+  localStorage.removeItem(CHAT_KEY); // 🔑 important
 
-  showApp();
-  showChatWelcome();
+  showAppShell();
+  showWelcome();
 };
 
 /* ===============================
-   MESSAGE SENDING
+   SEND MESSAGE
 ================================ */
 sendBtn.onclick = () => {
   const text = messageInput.value.trim();
@@ -147,7 +147,7 @@ sendBtn.onclick = () => {
   };
 
   saveMessage(currentUser, currentChat, message);
-  saveMessage(currentChat, currentUser, message); // mirror for other user
+  saveMessage(currentChat, currentUser, message);
 
   messageInput.value = "";
   renderChatHistory();
@@ -169,17 +169,20 @@ document.querySelectorAll(".chat-card").forEach(card => {
   const savedUser = localStorage.getItem(USER_KEY);
   const savedChat = localStorage.getItem(CHAT_KEY);
 
+  // FIRST VISIT → LOGIN
   if (!savedUser) {
     showLogin();
     return;
   }
 
+  // USER EXISTS
   currentUser = savedUser;
-  showApp();
+  showAppShell();
 
+  // RESTORE CHAT OR SHOW WELCOME
   if (savedChat) {
     openChat(savedChat);
   } else {
-    showChatWelcome();
+    showWelcome();
   }
 })();
