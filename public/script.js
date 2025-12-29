@@ -1,11 +1,11 @@
 const socket = io();
 
-/* ===== STATE ===== */
+/* ================= STATE ================= */
 let currentUser = "";
 let activeChatUser = null;
 let replyContext = null;
 
-/* ===== ELEMENTS ===== */
+/* ================= ELEMENTS ================= */
 const authScreen = document.getElementById("auth-screen");
 const chatScreen = document.getElementById("chat-screen");
 
@@ -26,7 +26,7 @@ const replyUser = document.getElementById("reply-user");
 const replyText = document.getElementById("reply-text");
 const cancelReply = document.getElementById("cancel-reply");
 
-/* ===== LOGIN ===== */
+/* ================= LOGIN ================= */
 loginBtn.onclick = () => {
   socket.emit(
     "login",
@@ -48,7 +48,7 @@ loginBtn.onclick = () => {
   );
 };
 
-/* ===== USERS ===== */
+/* ================= USER LIST ================= */
 function renderUserList(users) {
   userList.innerHTML = "";
   users.forEach(u => {
@@ -59,7 +59,7 @@ function renderUserList(users) {
   });
 }
 
-/* ===== OPEN CHAT ===== */
+/* ================= OPEN CHAT ================= */
 function openChat(user) {
   activeChatUser = user;
   chatHeader.textContent = user;
@@ -67,11 +67,14 @@ function openChat(user) {
   clearReply();
 
   socket.emit("loadChat", { withUser: user }, res => {
-    res.history.forEach(addMessage);
+    res.history.forEach(msg => {
+      normalizeMessage(msg);
+      addMessage(msg);
+    });
   });
 }
 
-/* ===== SEND ===== */
+/* ================= SEND MESSAGE ================= */
 chatForm.onsubmit = e => {
   e.preventDefault();
   if (!activeChatUser) return;
@@ -92,20 +95,28 @@ chatForm.onsubmit = e => {
   msgInput.value = "";
 };
 
-/* ===== RECEIVE ===== */
+/* ================= RECEIVE MESSAGE ================= */
 socket.on("privateMessage", msg => {
+  normalizeMessage(msg);
+
   if (
     (msg.from === currentUser && msg.to === activeChatUser) ||
     (msg.from === activeChatUser && msg.to === currentUser)
   ) {
-    if (!msg.replyTo && msg.message?.replyTo) {
-      msg.replyTo = msg.message.replyTo;
-    }
     addMessage(msg);
   }
 });
 
-/* ===== REPLY ===== */
+/* ================= NORMALIZE MESSAGE ================= */
+function normalizeMessage(msg) {
+  // flatten server payload → UI payload
+  if (msg.message) {
+    msg.content = msg.content ?? msg.message.content;
+    msg.replyTo = msg.replyTo ?? msg.message.replyTo;
+  }
+}
+
+/* ================= REPLY ================= */
 cancelReply.onclick = clearReply;
 
 function setReply(msg) {
@@ -124,7 +135,7 @@ function clearReply() {
   replyBar.style.display = "none";
 }
 
-/* ===== RENDER ===== */
+/* ================= RENDER MESSAGE ================= */
 function addMessage(msg) {
   const isMe = msg.from === currentUser;
 
