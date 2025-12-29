@@ -1,15 +1,9 @@
 const socket = io();
 
-/* ===============================
-   STATE
-================================ */
 let currentUser = localStorage.getItem("user");
 let currentChat = null;
 let onlineSet = new Set();
 
-/* ===============================
-   ELEMENTS
-================================ */
 const loginView = document.getElementById("login-view");
 const appView = document.getElementById("app-view");
 const userList = document.getElementById("user-list");
@@ -17,34 +11,14 @@ const chatBox = document.getElementById("chat-box");
 const chatTitle = document.getElementById("chat-title");
 const messageInput = document.getElementById("message-input");
 
-/* ===============================
-   HARD VIEW GATE (CRITICAL FIX)
-   Nothing renders until JS decides
-================================ */
-loginView.style.display = "none";
-appView.style.display = "none";
-
-/* ===============================
-   INITIAL ROUTING
-================================ */
 if (currentUser) {
+  loginView.style.display = "none";
   appView.style.display = "flex";
-  socket.emit("restoreSession", { username: currentUser });
-} else {
-  loginView.style.display = "flex";
 }
 
-/* ===============================
-   LOGIN
-================================ */
 document.getElementById("login-btn").onclick = () => {
-  const username = document.getElementById("username").value.trim();
+  const username = document.getElementById("username").value;
   const password = document.getElementById("password").value;
-
-  if (!username || !password) {
-    alert("Enter username and password");
-    return;
-  }
 
   socket.emit("login", { username, password }, res => {
     if (!res.ok) return alert("Invalid login");
@@ -59,31 +33,21 @@ document.getElementById("login-btn").onclick = () => {
   });
 };
 
-/* ===============================
-   USERS LIST
-================================ */
 function renderUsers(users) {
   userList.innerHTML = "";
-
-  users
-    .filter(u => u !== currentUser)
-    .forEach(u => {
-      const li = document.createElement("li");
-      li.innerHTML = `
-        <span class="status-dot" data-user="${u}"></span>
-        <span class="username">${u}</span>
-        <span class="badge" id="badge-${u}"></span>
-      `;
-      li.onclick = () => openChat(u);
-      userList.appendChild(li);
-    });
-
+  users.forEach(u => {
+    const li = document.createElement("li");
+    li.innerHTML = `
+      <span class="status-dot" data-user="${u}"></span>
+      <span>${u}</span>
+      <span class="badge" id="badge-${u}"></span>
+    `;
+    li.onclick = () => openChat(u);
+    userList.appendChild(li);
+  });
   updatePresenceUI();
 }
 
-/* ===============================
-   OPEN CHAT
-================================ */
 function openChat(user) {
   currentChat = user;
   chatTitle.innerText = user;
@@ -99,38 +63,29 @@ function openChat(user) {
   updatePresenceUI();
 }
 
-/* ===============================
-   SEND MESSAGE
-================================ */
 document.getElementById("send-btn").onclick = sendMessage;
 messageInput.onkeydown = e => e.key === "Enter" && sendMessage();
 
 function sendMessage() {
-  const text = messageInput.value.trim();
-  if (!text || !currentChat) return;
+  if (!messageInput.value || !currentChat) return;
 
   const msg = {
     from: currentUser,
     to: currentChat,
-    text,
+    text: messageInput.value,
     time: Date.now()
   };
 
   socket.emit("sendMessage", msg);
   renderMessage(msg);
-
   messageInput.value = "";
 }
 
-/* ===============================
-   RECEIVE MESSAGE
-================================ */
 socket.on("message", msg => {
-  const isCurrentChat =
+  if (
     (msg.from === currentUser && msg.to === currentChat) ||
-    (msg.from === currentChat && msg.to === currentUser);
-
-  if (isCurrentChat) {
+    (msg.from === currentChat && msg.to === currentUser)
+  ) {
     renderMessage(msg);
   } else if (msg.to === currentUser) {
     const badge = document.getElementById(`badge-${msg.from}`);
@@ -138,21 +93,14 @@ socket.on("message", msg => {
   }
 });
 
-/* ===============================
-   RENDER MESSAGE
-================================ */
 function renderMessage(msg) {
   const div = document.createElement("div");
   div.className = msg.from === currentUser ? "msg me" : "msg";
-  div.innerText = msg.text;
-
+  div.innerText = `${msg.from}: ${msg.text}`;
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-/* ===============================
-   PRESENCE
-================================ */
 socket.on("presence", users => {
   onlineSet = new Set(users);
   updatePresenceUI();

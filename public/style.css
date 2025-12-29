@@ -1,41 +1,44 @@
-/* HARD RESET */
-#login-view,
-#app-view {
-  display: none;
+* {
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
 }
 
-/* Base layout */
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
-  background: linear-gradient(135deg, #1b1b3a, #2e2e6f);
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
   color: white;
   height: 100vh;
-  overflow: hidden;
 }
 
+/* LOGIN */
 #login-view {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  gap: 10px;
 }
 
-#login-view input, #login-view button {
-  margin: 6px;
-  padding: 10px;
+#login-view input {
+  padding: 8px;
+  width: 200px;
 }
 
+#login-view button {
+  padding: 8px 16px;
+}
+
+/* APP */
 #app-view {
   display: none;
   height: 100vh;
 }
 
 aside {
-  width: 250px;
-  padding: 20px;
-  background: rgba(0,0,0,0.2);
+  width: 220px;
+  background: rgba(0,0,0,0.25);
+  padding: 15px;
 }
 
 aside ul {
@@ -61,25 +64,22 @@ main {
   flex-direction: column;
 }
 
-.chat-header {
-  padding: 15px;
-  background: rgba(0,0,0,0.3);
-}
-
-.chat-title-wrap {
+header {
+  padding: 10px;
+  background: rgba(0,0,0,0.2);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 #chat-box {
   flex: 1;
-  padding: 20px;
+  padding: 15px;
   overflow-y: auto;
 }
 
 .msg {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .msg.me {
@@ -87,28 +87,29 @@ main {
 }
 
 footer {
-  display: flex;
   padding: 10px;
-  background: rgba(0,0,0,0.3);
+  display: flex;
+  gap: 10px;
 }
 
 footer input {
   flex: 1;
-  padding: 10px;
+  padding: 8px;
 }
 
+/* STATUS + BADGE */
 .status-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: gray;
 }
 
 .status-dot.online {
-  background: #3cff7f;
+  background: #2ecc71;
 }
 
 .badge {
   margin-left: auto;
-  color: #3cff7f;
+  color: red;
 }

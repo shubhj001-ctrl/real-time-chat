@@ -1,68 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Veyon</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-<!-- LOGIN SCREEN -->
-<div id="login-screen" class="screen">
-  <div class="login-box">
-    <div class="brand-wrap">
-      <span class="brand-small">Welcome to</span>
-      <span class="brand-veyon">Veyon</span>
-      <p class="brand-hint">
-        Chat freely. Connect beyond the reach of others.
-      </p>
-    </div>
-
-    <input id="username" placeholder="Username" />
-    <input id="password" type="password" placeholder="Password" />
-    <button id="login-btn">Enter Veyon</button>
-    <p id="login-msg"></p>
-  </div>
+<!-- LOGIN -->
+<div id="login-view">
+  <h1>Welcome to Veyon</h1>
+  <p>Chat freely. Connect beyond the reach of others.</p>
+  <input id="username" placeholder="Username">
+  <input id="password" type="password" placeholder="Password">
+  <button id="login-btn">Enter Veyon</button>
 </div>
 
 <!-- APP -->
-<div id="app" class="hidden">
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
+<div id="app-view">
+  <aside>
     <h2>People</h2>
     <ul id="user-list"></ul>
   </aside>
 
-  <!-- CHAT AREA -->
-  <main class="chat-area">
-
-    <header class="chat-header">
-      <span id="chat-title">Welcome</span>
+  <main>
+    <header>
+      <span id="chat-title">Select a chat</span>
+      <span id="chat-status-dot" class="status-dot"></span>
     </header>
 
-    <!-- WELCOME -->
-    <div id="chat-welcome" class="welcome-screen">
-      <div class="brand-wrap">
-        <span class="brand-small">Welcome to</span>
-        <span class="brand-veyon">Veyon</span>
-        <p class="brand-hint">
-          Select someone to start chatting.
-        </p>
-      </div>
-    </div>
+    <div id="chat-box"></div>
 
-    <!-- MESSAGES -->
-    <div id="messages" class="messages hidden"></div>
-
-    <!-- INPUT (FORM FIX) -->
-    <form id="chat-form" class="chat-input hidden">
-      <input id="message-input" placeholder="Type something..." autocomplete="off" />
-      <button id="send-btn" type="submit">Send</button>
-    </form>
-
+    <footer>
+      <input id="message-input" placeholder="Type something...">
+      <button id="send-btn">Send</button>
+    </footer>
   </main>
 </div>
 
