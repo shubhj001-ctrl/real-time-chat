@@ -2,64 +2,70 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Private Chat</title>
+  <title>Veyon</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-<!-- AUTH SCREEN -->
-<div id="auth-screen" class="auth-screen">
-  <div class="auth-card">
-    <h2>Welcome back</h2>
-    <input id="auth-user" placeholder="Username" />
-    <input id="auth-pass" type="password" placeholder="Password" />
-    <button id="primary-btn">Login</button>
-    <p id="auth-msg"></p>
+  <!-- AUTH SCREEN -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card brand-card">
+      <h1 class="brand-title">Veyon</h1>
+      <p class="brand-tagline">
+        Chat freely.<br />
+        Connect beyond the reach of others.
+      </p>
+
+      <input id="auth-user" placeholder="Username" />
+      <input id="auth-pass" type="password" placeholder="Password" />
+      <button id="primary-btn">Enter Veyon</button>
+      <p id="auth-msg" class="auth-msg"></p>
+    </div>
   </div>
-</div>
 
-<!-- CHAT SCREEN -->
-<div id="chat-screen" class="chat-screen">
+  <!-- CHAT SCREEN -->
+  <div id="chat-screen" class="chat-screen">
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <h3>Chats</h3>
-    <ul id="user-list"></ul>
-  </aside>
-
-  <!-- MAIN CHAT -->
-  <main class="chat-main">
-
-    <!-- HEADER -->
-    <header class="chat-header">
-      <span id="chat-header">Select a chat</span>
-      <span id="online-count">🟢 0 online</span>
-    </header>
-
-    <!-- MESSAGES -->
-    <section id="chat-box" class="chat-box"></section>
-
-    <!-- REPLY BAR -->
-    <div id="reply-bar" class="reply-bar" style="display:none">
-      <span><strong id="reply-user"></strong>: <span id="reply-text"></span></span>
-      <button id="cancel-reply">✖</button>
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <h3>People</h3>
+      <ul id="user-list"></ul>
     </div>
 
-    <!-- INPUT -->
-    <form id="chat-form" class="chat-input">
-      <label class="attach">
-        📎
-        <input type="file" id="file-input" hidden />
-      </label>
-      <input id="message" placeholder="Type something…" />
-      <button type="submit">⚡</button>
-    </form>
+    <!-- MAIN -->
+    <div class="chat-main">
 
-  </main>
-</div>
+      <!-- WELCOME STATE -->
+      <div id="welcome-screen" class="welcome-screen">
+        <h1>Welcome to <span>Veyon</span></h1>
+        <p>Select someone from the left to start chatting.</p>
+      </div>
 
-<script src="/socket.io/socket.io.js"></script>
-<script src="script.js"></script>
+      <!-- CHAT UI -->
+      <div id="chat-ui" class="chat-ui">
+        <div class="chat-header" id="chat-header"></div>
+
+        <div class="chat-box" id="chat-box"></div>
+
+        <div class="reply-bar" id="reply-bar" style="display:none">
+          <div>
+            Replying to <strong id="reply-user"></strong><br />
+            <span id="reply-text"></span>
+          </div>
+          <button id="cancel-reply">✕</button>
+        </div>
+
+        <form class="chat-input" id="chat-form">
+          <input id="message" placeholder="Type something…" />
+          <button type="submit">➤</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
