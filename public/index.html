@@ -2,89 +2,63 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Veyon</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Veyon</title>
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
 
-  <!-- AUTH SCREEN -->
-  <div id="auth-screen" class="auth-screen">
-    <div class="auth-card brand-card">
-      <h1 class="brand-title">Veyon</h1>
-      <p class="brand-tagline">
-        Chat freely.<br />
-        Connect beyond the reach of others.
-      </p>
+<!-- LOGIN SCREEN -->
+<div id="login-screen" class="login-screen">
+  <div class="login-box">
+    <h1 class="logo">Veyon</h1>
+    <p class="tagline">Chat freely. Connect beyond the reach of others.</p>
 
-      <input id="auth-user" placeholder="Username" />
-      <input id="auth-pass" type="password" placeholder="Password" />
-      <button id="primary-btn">Enter Veyon</button>
-      <p id="auth-msg" class="auth-msg"></p>
-    </div>
-  </div>
-  <div class="brand-wrap login-brand">
-  <span class="brand-small">Welcome to</span>
-  <span class="brand-veyon">Veyon</span>
-  <p class="brand-hint">
-    Chat freely. Connect beyond the reach of others.
-  </p>
-</div>
-
-  <!-- CHAT SCREEN -->
-  <div id="chat-screen" class="chat-screen">
-
-    <!-- SIDEBAR -->
-    <div class="sidebar">
-      <h3>People</h3>
-      <input
-  id="user-search"
-  placeholder="Search people…"
-  style="width:100%;padding:10px;border-radius:12px;border:none;margin-bottom:12px"
-/>
-
-      <ul id="user-list"></ul>
-    </div>
-
-    <!-- MAIN -->
-    <div class="chat-main">
-
-      <!-- WELCOME STATE -->
-    <div id="welcome-screen" class="welcome-screen">
-  <div class="brand-wrap">
-    <span class="brand-small">Welcome to</span>
-    <span class="brand-veyon">Veyon</span>
-    <p class="brand-hint">
-      Select someone from the left to start chatting.
-    </p>
+    <input id="username" placeholder="Username" />
+    <input id="password" type="password" placeholder="Password" />
+    <button id="login-btn">Enter Veyon</button>
   </div>
 </div>
 
+<!-- APP -->
+<div id="app" class="app hidden">
 
-      <!-- CHAT UI -->
-      <div id="chat-ui" class="chat-ui">
-        <div class="chat-header" id="chat-header"></div>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <h2>People</h2>
+    <input class="search" placeholder="Search people..." />
 
-        <div class="chat-box" id="chat-box"></div>
-
-        <div class="reply-bar" id="reply-bar" style="display:none">
-          <div>
-            Replying to <strong id="reply-user"></strong><br />
-            <span id="reply-text"></span>
-          </div>
-          <button id="cancel-reply">✕</button>
-        </div>
-
-        <form class="chat-input" id="chat-form">
-          <input id="message" placeholder="Type something…" />
-          <button type="submit">➤</button>
-        </form>
-      </div>
-
+    <div class="chat-list">
+      <div class="chat-card" data-user="boss">boss</div>
+      <div class="chat-card" data-user="weed">weed</div>
     </div>
-  </div>
+  </aside>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="script.js"></script>
+  <!-- CHAT AREA -->
+  <main class="chat-area">
+
+    <header class="chat-header">
+      <span id="chat-title">Welcome</span>
+    </header>
+
+    <!-- WELCOME -->
+    <div id="chat-welcome" class="chat-welcome">
+      <p>Select someone from the left to start chatting.</p>
+    </div>
+
+    <!-- MESSAGES -->
+    <div id="messages" class="messages hidden"></div>
+
+    <!-- INPUT -->
+    <div id="chat-input" class="chat-input hidden">
+      <input id="message-input" placeholder="Type something..." />
+      <button id="send-btn">Send</button>
+    </div>
+
+  </main>
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
