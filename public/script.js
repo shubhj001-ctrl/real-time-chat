@@ -1,7 +1,7 @@
 const socket = io();
 
 /* ================= STATE ================= */
-let currentUser = "";
+let currentUser = null;
 let activeChatUser = null;
 let replyContext = null;
 
@@ -26,27 +26,67 @@ const replyUser = document.getElementById("reply-user");
 const replyText = document.getElementById("reply-text");
 const cancelReply = document.getElementById("cancel-reply");
 
+/* ================= LOCAL STORAGE ================= */
+const LS_USER = "vibechat_user";
+const LS_ACTIVE_CHAT = "vibechat_active_chat";
+
+/* ================= AUTO LOGIN ON LOAD ================= */
+document.addEventListener("DOMContentLoaded", () => {
+  const savedUser = localStorage.getItem(LS_USER);
+  const savedChat = localStorage.getItem(LS_ACTIVE_CHAT);
+
+  if (savedUser) {
+    autoLogin(savedUser, savedChat);
+  }
+});
+
 /* ================= LOGIN ================= */
 loginBtn.onclick = () => {
-  socket.emit(
-    "login",
-    {
-      username: userInput.value.trim(),
-      password: passInput.value.trim()
-    },
-    res => {
-      if (!res.ok) {
-        authMsg.textContent = res.msg;
-        return;
-      }
+  const username = userInput.value.trim();
+  const password = passInput.value.trim();
 
-      currentUser = userInput.value.trim();
-      authScreen.style.display = "none";
-      chatScreen.classList.add("active");
-      renderUserList(res.users);
+  if (!username || !password) {
+    authMsg.textContent = "Please enter credentials";
+    return;
+  }
+
+  socket.emit("login", { username, password }, res => {
+    if (!res.ok) {
+      authMsg.textContent = res.msg;
+      return;
     }
-  );
+
+    currentUser = username;
+    localStorage.setItem(LS_USER, username);
+
+    showChatUI();
+    renderUserList(res.users);
+  });
 };
+
+/* ================= AUTO LOGIN ================= */
+function autoLogin(username, savedChat) {
+  socket.emit("login", { username, password: "jaggibaba" }, res => {
+    if (!res.ok) {
+      localStorage.clear();
+      return;
+    }
+
+    currentUser = username;
+    showChatUI();
+    renderUserList(res.users);
+
+    if (savedChat) {
+      openChat(savedChat);
+    }
+  });
+}
+
+/* ================= UI HELPERS ================= */
+function showChatUI() {
+  authScreen.style.display = "none";
+  chatScreen.classList.add("active");
+}
 
 /* ================= USERS ================= */
 function renderUserList(users) {
@@ -62,6 +102,8 @@ function renderUserList(users) {
 /* ================= OPEN CHAT ================= */
 function openChat(user) {
   activeChatUser = user;
+  localStorage.setItem(LS_ACTIVE_CHAT, user);
+
   chatHeader.textContent = user;
   chatBox.innerHTML = "";
   clearReply();
