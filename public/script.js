@@ -13,37 +13,49 @@ const messageInput = document.getElementById("message-input");
 const sendBtn = document.getElementById("send-btn");
 
 /* ---------------------------
-   INITIAL LOAD (AUTO LOGIN)
+   INITIAL STATE
+---------------------------- */
+loginView.style.display = "none";
+appView.style.display = "none";
+
+/* ---------------------------
+   AUTO LOGIN (REFRESH SAFE)
 ---------------------------- */
 if (currentUser) {
-  loginView.style.display = "none";
   appView.style.display = "flex";
 
-  // 🔑 Silent re-login to restore socket state
   socket.emit(
     "login",
     { username: currentUser, password: "jaggibaba" },
     res => {
-      if (!res.ok) {
+      if (!res || !res.ok) {
         logout();
         return;
       }
       renderUsers(res.users);
     }
   );
+} else {
+  loginView.style.display = "flex";
 }
 
 /* ---------------------------
-   MANUAL LOGIN
+   LOGIN
 ---------------------------- */
 document.getElementById("login-btn").onclick = () => {
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value.trim();
 
-  if (!username || !password) return alert("Enter credentials");
+  if (!username || !password) {
+    alert("Enter username and password");
+    return;
+  }
 
   socket.emit("login", { username, password }, res => {
-    if (!res.ok) return alert("Invalid login");
+    if (!res || !res.ok) {
+      alert("Invalid login");
+      return;
+    }
 
     currentUser = username;
     localStorage.setItem("user", username);
@@ -60,16 +72,20 @@ document.getElementById("login-btn").onclick = () => {
 ---------------------------- */
 function renderUsers(users) {
   userList.innerHTML = "";
-  users.forEach(u => {
-    const li = document.createElement("li");
-    li.innerHTML = `
-      <span class="status-dot" data-user="${u}"></span>
-      <span>${u}</span>
-      <span class="badge" id="badge-${u}"></span>
-    `;
-    li.onclick = () => openChat(u);
-    userList.appendChild(li);
-  });
+
+  users
+    .filter(u => u !== currentUser)
+    .forEach(u => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <span class="status-dot" data-user="${u}"></span>
+        <span class="username">${u}</span>
+        <span class="badge" id="badge-${u}"></span>
+      `;
+      li.onclick = () => openChat(u);
+      userList.appendChild(li);
+    });
+
   updatePresenceUI();
 }
 
@@ -85,14 +101,16 @@ function openChat(user) {
   if (badge) badge.innerText = "";
 
   socket.emit("loadMessages", { withUser: user }, msgs => {
-    msgs.forEach(renderMessage);
+    if (Array.isArray(msgs)) {
+      msgs.forEach(renderMessage);
+    }
   });
 
   updatePresenceUI();
 }
 
 /* ---------------------------
-   SEND MESSAGE
+   SEND MESSAGE (FIXED)
 ---------------------------- */
 sendBtn.onclick = sendMessage;
 messageInput.onkeydown = e => {
@@ -110,9 +128,12 @@ function sendMessage() {
     time: Date.now()
   };
 
-  socket.emit("sendMessage", msg);
-  renderMessage(msg);
-  messageInput.value = "";
+  socket.emit("sendMessage", msg, res => {
+    if (!res || !res.ok) return;
+
+    renderMessage(msg);
+    messageInput.value = "";
+  });
 }
 
 /* ---------------------------
@@ -136,7 +157,7 @@ socket.on("message", msg => {
 function renderMessage(msg) {
   const div = document.createElement("div");
   div.className = msg.from === currentUser ? "msg me" : "msg";
-  div.innerText = `${msg.from}: ${msg.text}`;
+  div.innerText = msg.text;
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
@@ -161,7 +182,7 @@ function updatePresenceUI() {
 }
 
 /* ---------------------------
-   LOGOUT (SAFETY)
+   LOGOUT
 ---------------------------- */
 function logout() {
   localStorage.removeItem("user");
