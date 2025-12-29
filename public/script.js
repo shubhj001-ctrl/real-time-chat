@@ -237,3 +237,20 @@ function addMessage(msg) {
   chatBox.appendChild(row);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
+const chatWelcome = document.getElementById("chat-welcome");
+
+function showChatWelcome() {
+  if (chatWelcome) chatWelcome.classList.remove("hidden");
+}
+
+function hideChatWelcome() {
+  if (chatWelcome) chatWelcome.classList.add("hidden");
+}
+
+function isMobile() {
+  return window.innerWidth <= 768;
+}
+
+if (isMobile()) {
+  if (chatWelcome) chatWelcome.classList.add("hidden");
+}
