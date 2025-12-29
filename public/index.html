@@ -57,11 +57,11 @@
     <!-- MESSAGES -->
     <div id="messages" class="messages hidden"></div>
 
-    <!-- INPUT -->
-    <div id="chat-input" class="chat-input hidden">
-      <input id="message-input" placeholder="Type something..." />
-      <button id="send-btn">Send</button>
-    </div>
+    <!-- INPUT (FORM FIX) -->
+    <form id="chat-form" class="chat-input hidden">
+      <input id="message-input" placeholder="Type something..." autocomplete="off" />
+      <button id="send-btn" type="submit">Send</button>
+    </form>
 
   </main>
 </div>
