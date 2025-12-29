@@ -8,7 +8,7 @@ body {
   height: 100vh;
   background: radial-gradient(circle at top, #2e2a5f, #0d0b1f);
   color: white;
-  overflow: hidden; /* ✅ prevents horizontal scroll */
+  overflow: hidden;
 }
 
 /* ---------- AUTH ---------- */
@@ -93,20 +93,21 @@ body {
 /* ---------- CHAT BOX ---------- */
 .chat-box {
   flex: 1;
-  padding: 16px;
+  padding: 20px;
   overflow-y: auto;
 }
 
-/* ---------- MESSAGE ---------- */
+/* ---------- MESSAGE ROW ---------- */
 .message-row {
   display: flex;
-  margin-bottom: 14px;
+  margin-bottom: 22px; /* 🔥 more gap between messages */
 }
 
 .message-row.me {
   justify-content: flex-end;
 }
 
+/* ---------- BUBBLE ---------- */
 .bubble {
   max-width: 70%;
   padding: 12px 14px;
@@ -120,19 +121,22 @@ body {
   color: black;
 }
 
-/* ---------- REPLY PREVIEW ---------- */
+/* ---------- REPLY PREVIEW CARD ---------- */
 .reply-preview {
-  font-size: 12px;
-  opacity: 0.75;
+  background: rgba(0,0,0,0.18);
   border-left: 3px solid rgba(255,255,255,0.5);
-  padding-left: 8px;
-  margin-bottom: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 12px;
+  margin-bottom: 8px;
+  opacity: 0.9;
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* ---------- REPLY BUTTON (LEFT, NO OVERFLOW) ---------- */
+/* ---------- REPLY BUTTON ---------- */
 .reply-btn {
   position: absolute;
   left: -14px;
@@ -152,7 +156,6 @@ body {
   opacity: 1;
 }
 
-/* custom reply icon */
 .reply-btn::before {
   content: "";
   width: 7px;

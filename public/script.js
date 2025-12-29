@@ -71,7 +71,7 @@ function openChat(user) {
   });
 }
 
-/* ===== SEND MESSAGE ===== */
+/* ===== SEND ===== */
 chatForm.onsubmit = e => {
   e.preventDefault();
   if (!activeChatUser) return;
@@ -98,8 +98,7 @@ socket.on("privateMessage", msg => {
     (msg.from === currentUser && msg.to === activeChatUser) ||
     (msg.from === activeChatUser && msg.to === currentUser)
   ) {
-    // normalize replyTo (important fix)
-    if (msg.replyTo === undefined && msg.message?.replyTo) {
+    if (!msg.replyTo && msg.message?.replyTo) {
       msg.replyTo = msg.message.replyTo;
     }
     addMessage(msg);
@@ -136,7 +135,8 @@ function addMessage(msg) {
   if (msg.replyTo) {
     replyHtml = `
       <div class="reply-preview">
-        <strong>${msg.replyTo.user}</strong>: ${msg.replyTo.content}
+        <strong>${msg.replyTo.user}</strong><br>
+        ${msg.replyTo.content}
       </div>
     `;
   }
@@ -144,7 +144,7 @@ function addMessage(msg) {
   row.innerHTML = `
     <div class="bubble ${isMe ? "me" : "other"}">
       ${replyHtml}
-      ${msg.content}
+      <div>${msg.content}</div>
       <button class="reply-btn"></button>
     </div>
   `;
