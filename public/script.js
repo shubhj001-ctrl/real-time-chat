@@ -21,12 +21,41 @@ const messageInput = document.getElementById("message-input");
 ================================ */
 const USER_KEY = "veyon_user";
 const CHAT_KEY = "veyon_active_chat";
+const CHAT_STORE_KEY = "veyon_chats";
 
 /* ===============================
    STATE
 ================================ */
 let currentUser = null;
 let currentChat = null;
+
+/* ===============================
+   STORAGE HELPERS
+================================ */
+function loadAllChats() {
+  return JSON.parse(localStorage.getItem(CHAT_STORE_KEY)) || {};
+}
+
+function saveAllChats(data) {
+  localStorage.setItem(CHAT_STORE_KEY, JSON.stringify(data));
+}
+
+function getChatHistory(user, peer) {
+  const allChats = loadAllChats();
+  if (!allChats[user]) return [];
+  if (!allChats[user][peer]) return [];
+  return allChats[user][peer];
+}
+
+function saveMessage(user, peer, message) {
+  const allChats = loadAllChats();
+
+  if (!allChats[user]) allChats[user] = {};
+  if (!allChats[user][peer]) allChats[user][peer] = [];
+
+  allChats[user][peer].push(message);
+  saveAllChats(allChats);
+}
 
 /* ===============================
    VIEW HELPERS
@@ -63,6 +92,26 @@ function openChat(username) {
 
   chatTitle.innerText = username;
   showChatUI();
+
+  renderChatHistory();
+}
+
+/* ===============================
+   RENDER MESSAGES
+================================ */
+function renderChatHistory() {
+  messages.innerHTML = "";
+
+  const history = getChatHistory(currentUser, currentChat);
+
+  history.forEach(msg => {
+    const div = document.createElement("div");
+    div.className = "message";
+    div.innerText = msg.text;
+    messages.appendChild(div);
+  });
+
+  messages.scrollTop = messages.scrollHeight;
 }
 
 /* ===============================
@@ -85,19 +134,23 @@ loginBtn.onclick = () => {
 };
 
 /* ===============================
-   MESSAGE SENDING (LOCAL ONLY)
+   MESSAGE SENDING
 ================================ */
 sendBtn.onclick = () => {
   const text = messageInput.value.trim();
   if (!text || !currentChat) return;
 
-  const msg = document.createElement("div");
-  msg.className = "message";
-  msg.innerText = text;
+  const message = {
+    from: currentUser,
+    text,
+    time: Date.now()
+  };
 
-  messages.appendChild(msg);
+  saveMessage(currentUser, currentChat, message);
+  saveMessage(currentChat, currentUser, message); // mirror for other user
+
   messageInput.value = "";
-  messages.scrollTop = messages.scrollHeight;
+  renderChatHistory();
 };
 
 /* ===============================
