@@ -68,10 +68,12 @@ aside li:hover {
 
 /* CHAT */
 main {
+  position: relative; /* 🔑 anchor for welcome screen */
   flex: 1;
   display: flex;
   flex-direction: column;
 }
+
 
 header {
   padding: 12px 16px;
@@ -259,9 +261,11 @@ footer {
 
 /* 🖤 WELCOME SCREEN */
 /* 🖤 WELCOME SCREEN (EMPTY STATE) */
+/* 🖤 WELCOME SCREEN (EMPTY CHAT STATE) */
 #welcome-screen {
   position: absolute;
   inset: 0;
+
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -269,7 +273,8 @@ footer {
   text-align: center;
 
   background: #000;
-  z-index: 1;
+  z-index: 0; /* behind header */
+  pointer-events: none;
 }
 
 .welcome-logo {
@@ -277,8 +282,8 @@ footer {
   font-weight: 500;
   letter-spacing: 2px;
   color: #E2CEB1;
-
   transition: transform 0.35s ease;
+  pointer-events: auto;
 }
 
 .welcome-logo:hover {
@@ -292,7 +297,7 @@ footer {
   opacity: 0.6;
 }
 
-/* Hide welcome screen once chat is selected */
+/* Hide welcome when chat is active */
 #app-view.chat-active #welcome-screen {
   display: none;
 }
