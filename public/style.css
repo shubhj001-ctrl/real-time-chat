@@ -90,8 +90,14 @@ header {
   padding: 8px 12px;
   border-radius: 10px;
   background: rgba(255,255,255,0.15);
+
+  width: fit-content;
   max-width: 70%;
+
+  word-wrap: break-word;
+  white-space: pre-wrap;
 }
+
 
 .msg-wrapper.me .msg-bubble {
   background: #4a5cff;
