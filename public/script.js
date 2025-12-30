@@ -3,6 +3,7 @@ const socket = io();
 let currentUser = localStorage.getItem("user");
 let currentChat = null;
 let replyTo = null;
+let onlineUsers = new Set();
 
 /* ELEMENTS */
 const loginView = document.getElementById("login-view");
@@ -10,6 +11,7 @@ const appView = document.getElementById("app-view");
 const userList = document.getElementById("user-list");
 const chatBox = document.getElementById("chat-box");
 const chatTitle = document.getElementById("chat-title");
+const statusDot = document.getElementById("chat-status-dot");
 const messageInput = document.getElementById("message-input");
 const sendBtn = document.getElementById("send-btn");
 
@@ -36,6 +38,7 @@ if (currentUser) {
 document.getElementById("login-btn").onclick = () => {
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value.trim();
+  if (!username || !password) return;
 
   socket.emit("login", { username, password }, res => {
     if (!res.ok) return alert("Invalid login");
@@ -50,15 +53,41 @@ document.getElementById("login-btn").onclick = () => {
   });
 };
 
+/* PRESENCE */
+socket.on("presence", users => {
+  onlineUsers = new Set(users);
+  updateStatusDot();
+  updateUserListPresence();
+});
+
 /* USERS */
 function renderUsers(users) {
   userList.innerHTML = "";
   users.forEach(u => {
     const li = document.createElement("li");
+    li.dataset.user = u;
     li.innerHTML = `<span>${u}</span>`;
     li.onclick = () => openChat(u);
     userList.appendChild(li);
   });
+  updateUserListPresence();
+}
+
+function updateUserListPresence() {
+  document.querySelectorAll("#user-list li").forEach(li => {
+    const user = li.dataset.user;
+    li.style.opacity = onlineUsers.has(user) ? "1" : "0.4";
+  });
+}
+
+function updateStatusDot() {
+  if (!currentChat) {
+    statusDot.classList.remove("online");
+    return;
+  }
+  onlineUsers.has(currentChat)
+    ? statusDot.classList.add("online")
+    : statusDot.classList.remove("online");
 }
 
 /* CHAT */
@@ -66,6 +95,8 @@ function openChat(user) {
   currentChat = user;
   chatTitle.innerText = user;
   chatBox.innerHTML = "";
+  clearReply();
+  updateStatusDot();
 
   socket.emit("loadMessages", { withUser: user }, msgs => {
     msgs.forEach(renderMessage);
@@ -93,20 +124,21 @@ function sendMessage() {
   messageInput.value = "";
   clearReply();
 
-  // send to server; rendering is handled when server emits "message"
   socket.emit("sendMessage", msg);
 }
 
-// render incoming messages (including those sent by this client)
+/* RECEIVE */
 socket.on("message", msg => {
   if (!currentChat) return;
+
   const relevant =
     (msg.from === currentChat && msg.to === currentUser) ||
     (msg.from === currentUser && msg.to === currentChat);
+
   if (relevant) renderMessage(msg);
 });
 
-/* RENDER */
+/* RENDER MESSAGE */
 function renderMessage(msg) {
   const wrap = document.createElement("div");
   wrap.className = msg.from === currentUser ? "msg-wrapper me" : "msg-wrapper";
@@ -124,9 +156,22 @@ function renderMessage(msg) {
     bubble.appendChild(r);
   }
 
-  bubble.appendChild(document.createTextNode(msg.text));
-  wrap.appendChild(bubble);
+  const textNode = document.createElement("div");
+  textNode.innerText = msg.text;
+  bubble.appendChild(textNode);
 
+  const time = document.createElement("div");
+  time.className = "msg-time";
+  time.innerText = new Date(msg.time).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+
+  bubble.appendChild(time);
+
+  bubble.onclick = () => setReply(msg);
+
+  wrap.appendChild(bubble);
   chatBox.appendChild(wrap);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
