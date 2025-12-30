@@ -21,6 +21,8 @@ const replyPreview = document.getElementById("reply-preview");
 const replyUser = document.getElementById("reply-user");
 const replyText = document.getElementById("reply-text");
 const cancelReply = document.getElementById("cancel-reply");
+const chatBg = document.getElementById("chat-bg");
+
 
 /* INIT */
 loginView.style.display = "none";
@@ -109,6 +111,7 @@ function updateStatusDot() {
 function openChat(user) {
   currentChat = user;
   chatTitle.innerText = user;
+  chatBg.style.display = "block";
   chatBox.innerHTML = "";
   clearReply();
   updateStatusDot();
@@ -138,6 +141,7 @@ backBtn.onclick = () => {
   clearReply();
    // 🔥 RESTORE WELCOME SCREEN
   welcomeScreen.classList.remove("hidden");
+  chatBg.style.display = "none";
 };
 
 /* SEND */
