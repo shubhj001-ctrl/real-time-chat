@@ -2,6 +2,7 @@
 <html>
 <head>
   <title>Veyon</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -17,13 +18,14 @@
 
 <!-- APP -->
 <div id="app-view">
-  <aside>
+  <aside id="sidebar">
     <h2>People</h2>
     <ul id="user-list"></ul>
   </aside>
 
-  <main>
+  <main id="chat-area">
     <header>
+      <button id="mobile-back-btn">←</button>
       <span id="chat-title">Select a chat</span>
       <span id="chat-status-dot" class="status-dot"></span>
     </header>
@@ -31,7 +33,6 @@
     <div id="chat-box"></div>
 
     <footer>
-      <!-- REPLY PREVIEW (NOW SAFE) -->
       <div id="reply-preview" class="reply-preview hidden">
         <span id="reply-user"></span>
         <span id="reply-text"></span>

@@ -210,3 +210,36 @@ function logout() {
   localStorage.removeItem("user");
   location.reload();
 }
+
+// 🔼 (your existing script stays same up to element selection)
+
+const backBtn = document.getElementById("mobile-back-btn");
+
+function isMobile() {
+  return window.innerWidth <= 768;
+}
+
+/* CHAT */
+function openChat(user) {
+  currentChat = user;
+  chatTitle.innerText = user;
+  chatBox.innerHTML = "";
+  clearReply();
+  updateStatusDot();
+
+  if (isMobile()) {
+    document.getElementById("app-view").classList.add("mobile-chat-open");
+  }
+
+  socket.emit("loadMessages", { withUser: user }, msgs => {
+    msgs.forEach(renderMessage);
+  });
+}
+
+/* MOBILE BACK */
+backBtn.onclick = () => {
+  document.getElementById("app-view").classList.remove("mobile-chat-open");
+  currentChat = null;
+  chatTitle.innerText = "Select a chat";
+  statusDot.classList.remove("online");
+};
