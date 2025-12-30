@@ -235,3 +235,6 @@ footer {
     display: none;
   }
 }
+#welcome-screen {
+  pointer-events: none;
+}
