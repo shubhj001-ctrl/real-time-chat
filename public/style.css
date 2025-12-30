@@ -238,3 +238,9 @@ footer {
 #welcome-screen {
   pointer-events: none;
 }
+.reply-preview {
+  padding: 6px 10px;
+  border-left: 2px solid #E2CEB1;
+  font-size: 13px;
+  opacity: 0.85;
+}
