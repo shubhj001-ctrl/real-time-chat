@@ -7,21 +7,17 @@ const chatTitle = document.getElementById("chat-title");
 const input = document.getElementById("message-input");
 const sendBtn = document.getElementById("send-btn");
 
-/* STATE */
-let currentUser = localStorage.getItem("user");
+/* DEFAULT USER (PUBLIC ACCESS MODE) */
+const currentUser = "shubh"; // 👈 change when needed
 let currentChat = null;
 
-/* LOGIN (simple prompt for now) */
-if (!currentUser) {
-  currentUser = prompt("Enter username (shubh / boss / weed / alex)");
-  localStorage.setItem("user", currentUser);
-}
-
+/* LOGIN */
 socket.emit("login", currentUser);
 
-/* USERS LIST */
+/* USERS LIST (ALWAYS SHOW) */
 socket.on("users", users => {
   userList.innerHTML = "";
+
   users.forEach(u => {
     const div = document.createElement("div");
     div.className = "user-card";
