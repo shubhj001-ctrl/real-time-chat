@@ -54,7 +54,9 @@
 
       <span id="chat-title">Select a chat</span>
     </header>
-
+<div id="empty-chat" class="empty-chat">
+  Select a chat to start messaging
+</div>
     <div class="chat-messages" id="chat-box"></div>
     <div id="chat-box">
   <!-- messages -->
@@ -68,11 +70,18 @@
 
 
     <footer class="chat-input">
+      <div id="chat-footer" class="chat-footer hidden">
+
+  <div id="reply-preview" class="reply-preview hidden">
+      <div class="input-row">
+    <input id="message-input" placeholder="Type a message" />
+    <button id="send-btn">Send</button>
+  </div>
       <div id="reply-preview" class="reply-preview hidden">
   <div class="reply-line"></div>
   <div class="reply-content">
     <span id="reply-user"></span>
-    <span id="reply-text"></span>
+    <span id="reply-text"></span> 
   </div>
   <button id="cancel-reply">✕</button>
 </div>

@@ -5,6 +5,8 @@ const loadingScreen = document.getElementById("loading-screen");
 const loadingLogo = document.getElementById("loading-logo");
 const loadingWord = document.getElementById("loading-word");
 const typingBubble = document.getElementById("typing-bubble");
+const chatFooter = document.getElementById("chat-footer");
+
 
 let replyTarget = null;
 
@@ -125,6 +127,9 @@ function attemptLogin(username, password, silent) {
         loginError.classList.remove("hidden");
       }
      localStorage.clear();
+     currentChat = null;
+chatFooter.classList.add("hidden");
+
 endLoading();
 loginScreen.classList.remove("hidden");
 return;
@@ -190,8 +195,10 @@ function renderUsers(users=allUsers) {
 
 /* OPEN CHAT */
 function openChat(user) {
+  
   // 1️⃣ Set current chat FIRST
   currentChat = user;
+  chatFooter.classList.remove("hidden");
 
   // 2️⃣ Clear unread count IMMEDIATELY
   if (unreadCounts[user]) {

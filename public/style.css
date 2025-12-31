@@ -499,3 +499,15 @@ body {
   margin-bottom: 4px;
   cursor: pointer;
 }
+
+.hidden {
+  display: none !important;
+}
+.empty-chat {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(202,169,96,0.6);
+  font-size: 18px;
+}
