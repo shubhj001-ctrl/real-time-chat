@@ -161,7 +161,7 @@ function renderUsers(users) {
     badge.className = "unread-badge";
 
     if (unreadCounts[u]) {
-      badge.textContent = unreadCounts[u];
+     badge.textContent = unreadCounts[u] > 9 ? "9+" : unreadCounts[u];
       badge.classList.add("show");
     }
 
