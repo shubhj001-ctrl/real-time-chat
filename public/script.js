@@ -6,6 +6,7 @@ const loadingLogo = document.getElementById("loading-logo");
 const loadingWord = document.getElementById("loading-word");
 const typingBubble = document.getElementById("typing-bubble");
 const chatFooter = document.getElementById("chat-footer");
+const emptyChat = document.getElementById("empty-chat");
 
 
 let replyTarget = null;
@@ -27,6 +28,11 @@ let unreadCounts = JSON.parse(
   localStorage.getItem("veyon_unread") || "{}"
 );
 let allUsers = [];
+currentChat = null;
+
+emptyChat.classList.remove("hidden");
+chatBox.classList.add("hidden");
+chatFooter.classList.add("hidden");
 
 
 
@@ -195,34 +201,36 @@ function renderUsers(users=allUsers) {
 
 /* OPEN CHAT */
 function openChat(user) {
-  
-  // 1️⃣ Set current chat FIRST
+  // 1️⃣ Set current chat
   currentChat = user;
-  chatFooter.classList.remove("hidden");
 
-  // 2️⃣ Clear unread count IMMEDIATELY
+  // 2️⃣ Switch UI state
+  emptyChat.classList.add("hidden");
+  chatBox.classList.remove("hidden");
+  chatFooter.classList.remove("hidden");
+  console.log("Opening chat with:", user);
+
+
+  // 3️⃣ Clear unread
   if (unreadCounts[user]) {
     delete unreadCounts[user];
     localStorage.setItem("veyon_unread", JSON.stringify(unreadCounts));
   }
 
-if (unreadCounts[user]) {
-  delete unreadCounts[user];
-  localStorage.setItem("veyon_unread", JSON.stringify(unreadCounts));
-}
+  renderUsers(allUsers);
 
-renderUsers(allUsers);
-
-  // 4️⃣ Reset typing bubble (safety)
-  typingBubble.classList.add("hidden");
-  typingBubble.classList.remove("show");
-
-  // 5️⃣ Load chat messages
-  chatTitle.innerText = user;
+  // 4️⃣ Reset chat area
+  chatTitle.textContent = user;
   chatBox.innerHTML = "";
 
+  // 5️⃣ Hide reply & typing safely
+  replyPreview.classList.add("hidden");
+  typingBubble.classList.add("hidden");
+
+  // 6️⃣ Load messages
   socket.emit("loadMessages", { withUser: user }, msgs => {
     msgs.forEach(renderMessage);
+    chatBox.scrollTop = chatBox.scrollHeight;
   });
 }
 
