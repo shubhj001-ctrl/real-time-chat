@@ -352,3 +352,24 @@ body {
     text-shadow: 0 0 18px rgba(202,169,96,0.6);
   }
 }
+.typing {
+  font-size: 13px;
+  opacity: 0.7;
+  margin-top: 4px;
+}
+
+.dots::after {
+  content: "";
+  animation: dots 1.4s infinite;
+}
+
+@keyframes dots {
+  0% { content: ""; }
+  33% { content: "."; }
+  66% { content: ".."; }
+  100% { content: "..."; }
+}
+
+.hidden {
+  display: none !important;
+}

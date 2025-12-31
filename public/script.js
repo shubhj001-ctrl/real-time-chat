@@ -4,6 +4,8 @@ const socket = io();
 const loadingScreen = document.getElementById("loading-screen");
 const loadingLogo = document.getElementById("loading-logo");
 const loadingWord = document.getElementById("loading-word");
+const typingIndicator = document.getElementById("typing-indicator");
+
 
 const brand = "Veyon";
 let charIndex = 0;
@@ -121,6 +123,13 @@ return;
     app.classList.remove("hidden");
 
     renderUsers(res.users);
+    const lastChat = localStorage.getItem("veyon_last_chat");
+if (lastChat) {
+  setTimeout(() => {
+    openChat(lastChat);
+  }, 300); // wait for UI to render
+}
+
   });
 }
 
@@ -128,6 +137,7 @@ return;
 logoutBtn.onclick = () => {
   localStorage.removeItem("veyon_user");
   localStorage.removeItem("veyon_pass");
+  localStorage.removeItem("veyon_last_chat");
   location.reload();
 };
 
@@ -156,6 +166,7 @@ function renderUsers(users) {
 function openChat(user) {
   currentChat = user;
   chatTitle.innerText = user;
+  localStorage.setItem("veyon_last_chat", user);
   chatBox.innerHTML = "";
 
   socket.emit("loadMessages", { withUser: user }, msgs => {
@@ -204,3 +215,27 @@ function renderMessage(msg) {
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
+
+let typingTimeout;
+
+input.addEventListener("input", () => {
+  if (!currentChat) return;
+
+  socket.emit("typing", { to: currentChat });
+
+  clearTimeout(typingTimeout);
+  typingTimeout = setTimeout(() => {
+    socket.emit("stopTyping", { to: currentChat });
+  }, 1200);
+});
+socket.on("typing", data => {
+  if (data.from === currentChat && data.to === currentUser) {
+    typingIndicator.classList.remove("hidden");
+  }
+});
+
+socket.on("stopTyping", data => {
+  if (data.from === currentChat && data.to === currentUser) {
+    typingIndicator.classList.add("hidden");
+  }
+});
