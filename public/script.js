@@ -1,27 +1,50 @@
 const socket = io();
 
-/* ===== LOADING ANIMATION ===== */
+/* ===== LOADING SCREEN ===== */
 const loadingScreen = document.getElementById("loading-screen");
 const loadingLogo = document.getElementById("loading-logo");
 const loadingWord = document.getElementById("loading-word");
 
 const brand = "Veyon";
-let index = 0;
+let charIndex = 0;
 
-const typeInterval = setInterval(() => {
-  loadingLogo.textContent = brand.slice(0, index + 1);
-  loadingWord.textContent = brand.slice(0, index + 1);
-  index = (index + 1) % brand.length;
-}, 180);
+/* Smooth letter-by-letter typing */
+function startTyping() {
+  charIndex = 0;
+  loadingLogo.textContent = "";
+  loadingWord.textContent = "";
 
-/* Hide loading when ready */
-function hideLoading() {
-  clearInterval(typeInterval);
+  const typing = setInterval(() => {
+    if (charIndex < brand.length) {
+      loadingLogo.textContent += brand[charIndex];
+      loadingWord.textContent += brand[charIndex];
+      charIndex++;
+    } else {
+      clearInterval(typing);
+    }
+  }, 220); // smooth human-like typing
+}
+
+startTyping();
+let loadingDone = false;
+
+/* Force loader to end after max time */
+const MAX_LOADING_TIME = 3200; // 3.2 seconds
+
+setTimeout(() => {
+  if (!loadingDone) {
+    endLoading();
+  }
+}, MAX_LOADING_TIME);
+
+function endLoading() {
+  loadingDone = true;
   loadingScreen.classList.add("fade-out");
   setTimeout(() => {
     loadingScreen.style.display = "none";
   }, 600);
 }
+
 
 
 /* LOGIN ELEMENTS */
@@ -52,9 +75,9 @@ if (savedUser && savedPass) {
   attemptLogin(savedUser, savedPass, true);
 } else {
   setTimeout(() => {
-    hideLoading();
+    endLoading();
     loginScreen.classList.remove("hidden");
-  }, 800);
+  }, 2800);
 }
 
 /* LOGIN CLICK */
@@ -81,8 +104,11 @@ function attemptLogin(username, password, silent) {
         loginError.textContent = "You don’t have access to this portal.";
         loginError.classList.remove("hidden");
       }
-      localStorage.clear();
-      return;
+     localStorage.clear();
+endLoading();
+loginScreen.classList.remove("hidden");
+return;
+
     }
 
     currentUser = username;
@@ -90,6 +116,7 @@ function attemptLogin(username, password, silent) {
     localStorage.setItem("veyon_user", username);
     localStorage.setItem("veyon_pass", password);
 
+    endLoading();
     loginScreen.classList.add("hidden");
     app.classList.remove("hidden");
 

@@ -340,3 +340,15 @@ body {
     transform: scale(0.98);
   }
 }
+#loading-logo {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    text-shadow: 0 0 0px rgba(202,169,96,0.3);
+  }
+  to {
+    text-shadow: 0 0 18px rgba(202,169,96,0.6);
+  }
+}
