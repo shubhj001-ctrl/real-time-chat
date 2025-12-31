@@ -1,15 +1,12 @@
-const socket = io();
-
 const userList = document.getElementById("user-list");
 const chatBox = document.getElementById("chat-box");
 const chatTitle = document.getElementById("chat-title");
 const input = document.getElementById("message-input");
 const sendBtn = document.getElementById("send-btn");
 
-let currentUser = "shubh"; // temp
 let currentChat = null;
 
-/* TEMP USERS FOR UI */
+/* USERS */
 ["boss", "weed", "alex", "sam"].forEach(u => {
   const div = document.createElement("div");
   div.className = "user-card";
@@ -24,22 +21,47 @@ function openChat(user) {
   chatBox.innerHTML = "";
 }
 
-/* SEND MESSAGE WITH ANIMATION FEEL */
+/* SEND WITH REAL ANIMATION */
 sendBtn.onclick = sendMessage;
 input.addEventListener("keydown", e => {
   if (e.key === "Enter") sendMessage();
 });
 
 function sendMessage() {
+  if (!currentChat) return;
+
   const text = input.value.trim();
-  if (!text || !currentChat) return;
+  if (!text) return;
 
-  const msg = document.createElement("div");
-  msg.className = "message me";
-  msg.innerText = text;
+  // 1️⃣ Create floating message at input position
+  const floating = document.createElement("div");
+  floating.className = "message me floating";
+  floating.innerText = text;
+  document.body.appendChild(floating);
 
-  chatBox.appendChild(msg);
-  chatBox.scrollTop = chatBox.scrollHeight;
+  const inputRect = input.getBoundingClientRect();
+  const chatRect = chatBox.getBoundingClientRect();
+
+  floating.style.left = inputRect.left + "px";
+  floating.style.top = inputRect.top + "px";
+  floating.style.width = inputRect.width + "px";
+
+  // 2️⃣ Trigger animation
+  requestAnimationFrame(() => {
+    floating.style.transform = `translateY(${chatRect.top - inputRect.top - 20}px) scale(1)`;
+    floating.style.opacity = "0";
+  });
+
+  // 3️⃣ After animation, add real message
+  setTimeout(() => {
+    floating.remove();
+
+    const msg = document.createElement("div");
+    msg.className = "message me";
+    msg.innerText = text;
+    chatBox.appendChild(msg);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }, 300);
 
   input.value = "";
 }
