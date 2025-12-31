@@ -16,18 +16,16 @@ const chatTitle = document.getElementById("chat-title");
 const input = document.getElementById("message-input");
 const sendBtn = document.getElementById("send-btn");
 
-let currentUser = localStorage.getItem("veyon_user");
+/* STATE */
+let currentUser = null;
 let currentChat = null;
-
-/* AUTO LOGIN IF STORED */
-if (currentUser) {
-  startApp(currentUser);
-}
 
 /* LOGIN */
 loginBtn.onclick = () => {
   const username = usernameInput.value.trim();
   const password = passwordInput.value.trim();
+
+  loginError.classList.add("hidden");
 
   socket.emit("login", { username, password }, res => {
     if (!res.ok) {
@@ -35,21 +33,15 @@ loginBtn.onclick = () => {
       return;
     }
 
+    currentUser = username;
     localStorage.setItem("veyon_user", username);
-    startApp(username, res.users);
+
+    loginScreen.classList.add("hidden");
+    app.classList.remove("hidden");
+
+    renderUsers(res.users);
   });
 };
-
-/* START APP */
-function startApp(username, users = []) {
-  currentUser = username;
-  loginScreen.classList.add("hidden");
-  app.classList.remove("hidden");
-
-  renderUsers(users);
-
-  socket.emit("login", { username, password: "" }, () => {});
-}
 
 /* LOGOUT */
 logoutBtn.onclick = () => {
@@ -60,6 +52,12 @@ logoutBtn.onclick = () => {
 /* USERS */
 function renderUsers(users) {
   userList.innerHTML = "";
+
+  if (!users || users.length === 0) {
+    userList.innerHTML = `<div style="opacity:.6;padding:12px">No users available</div>`;
+    return;
+  }
+
   users.forEach(u => {
     const div = document.createElement("div");
     div.className = "user-card";
@@ -80,7 +78,7 @@ function openChat(user) {
   });
 }
 
-/* SEND */
+/* SEND MESSAGE */
 sendBtn.onclick = sendMessage;
 input.addEventListener("keydown", e => {
   if (e.key === "Enter") sendMessage();
@@ -102,7 +100,7 @@ function sendMessage() {
   input.value = "";
 }
 
-/* RECEIVE */
+/* RECEIVE MESSAGE */
 socket.on("message", msg => {
   if (
     (msg.from === currentChat && msg.to === currentUser) ||
@@ -112,7 +110,7 @@ socket.on("message", msg => {
   }
 });
 
-/* RENDER */
+/* RENDER MESSAGE */
 function renderMessage(msg) {
   const div = document.createElement("div");
   div.className = "message" + (msg.from === currentUser ? " me" : "");
