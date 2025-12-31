@@ -20,29 +20,10 @@ function chatKey(a, b) {
 io.on("connection", socket => {
   console.log("🔌 New socket connected:", socket.id);
 
+  // LOGIN
   socket.on("login", (data, cb) => {
     console.log("➡️ Login attempt:", data);
-  socket.on("typing", data => {
-  if (!currentChat || !currentUser) return;
 
-  if (data.from === currentChat && data.to === currentUser) {
-    typingIndicator.textContent = `${data.from} is typing`;
-    typingIndicator.classList.remove("hidden");
-  }
-});
-
-socket.on("stopTyping", data => {
-  if (!currentChat || !currentUser) return;
-
-  if (data.from === currentChat && data.to === currentUser) {
-    typingIndicator.classList.add("hidden");
-  }
-});
-
-
-
-
-    // 🔒 HARD VALIDATION
     if (
       !data ||
       !data.username ||
@@ -70,11 +51,32 @@ socket.on("stopTyping", data => {
     io.emit("online", [...onlineUsers]);
   });
 
+  // TYPING INDICATOR (SERVER ONLY RELAYS)
+  socket.on("typing", ({ to }) => {
+    if (!socket.username) return;
+
+    io.emit("typing", {
+      from: socket.username,
+      to
+    });
+  });
+
+  socket.on("stopTyping", ({ to }) => {
+    if (!socket.username) return;
+
+    io.emit("stopTyping", {
+      from: socket.username,
+      to
+    });
+  });
+
+  // LOAD MESSAGES
   socket.on("loadMessages", ({ withUser }, cb) => {
     const key = chatKey(socket.username, withUser);
     cb(messages[key] || []);
   });
 
+  // SEND MESSAGE
   socket.on("sendMessage", msg => {
     const key = chatKey(msg.from, msg.to);
     if (!messages[key]) messages[key] = [];
@@ -83,6 +85,7 @@ socket.on("stopTyping", data => {
     io.emit("message", msg);
   });
 
+  // DISCONNECT
   socket.on("disconnect", () => {
     console.log("❌ Disconnected:", socket.username);
     onlineUsers.delete(socket.username);
