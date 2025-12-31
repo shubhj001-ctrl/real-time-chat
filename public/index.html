@@ -7,52 +7,37 @@
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="login-view">
-  <h1>Veyon</h1>
-  <p>Chat Freely, Beyond the reach of others.</p>
-  <input id="username" placeholder="Username">
-  <input id="password" type="password" placeholder="Password">
-  <button id="login-btn">Enter</button>
-</div>
+<div id="app">
 
-<!-- APP -->
-<div id="app-view">
-  <aside>
-    <h2>People</h2>
-    <ul id="user-list"></ul>
-  </aside>
-
-  <main>
-    <header>
-      <button id="mobile-back-btn">←</button>
-      <span id="chat-title">Select a chat</span>
-      <span id="chat-status-dot" class="status-dot"></span>
-    </header>
-
-    <!-- WELCOME SCREEN -->
-    <div id="welcome-screen">
-      <div class="welcome-logo">Veyon</div>
-      <div class="welcome-tagline">
-        Chat Freely, Beyond the reach of others.
-      </div>
+  <!-- LEFT SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>Veyon</h2>
     </div>
 
-    <div id="chat-box"></div>
+    <div class="user-list" id="user-list">
+      <!-- users injected here -->
+    </div>
+  </aside>
 
-    <footer>
-      <div id="reply-preview" class="reply-preview hidden">
-        <span id="reply-user"></span>
-        <span id="reply-text"></span>
-    
-      </div>
+  <!-- RIGHT CHAT AREA -->
+  <main class="chat-area">
 
-      <div class="input-row">
-        <input id="message-input" placeholder="Type something...">
-        <button id="send-btn">Send</button>
-      </div>
+    <header class="chat-header">
+      <span id="chat-title">Select a chat</span>
+    </header>
+
+    <div class="chat-messages" id="chat-box">
+      <!-- messages -->
+    </div>
+
+    <footer class="chat-input">
+      <input id="message-input" placeholder="Type a message">
+      <button id="send-btn">Send</button>
     </footer>
+
   </main>
+
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
