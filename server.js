@@ -22,6 +22,25 @@ io.on("connection", socket => {
 
   socket.on("login", (data, cb) => {
     console.log("➡️ Login attempt:", data);
+  socket.on("typing", data => {
+  if (!currentChat || !currentUser) return;
+
+  if (data.from === currentChat && data.to === currentUser) {
+    typingIndicator.textContent = `${data.from} is typing`;
+    typingIndicator.classList.remove("hidden");
+  }
+});
+
+socket.on("stopTyping", data => {
+  if (!currentChat || !currentUser) return;
+
+  if (data.from === currentChat && data.to === currentUser) {
+    typingIndicator.classList.add("hidden");
+  }
+});
+
+
+
 
     // 🔒 HARD VALIDATION
     if (
