@@ -57,10 +57,17 @@ function sendMessage() {
     floating.remove();
 
     const msg = document.createElement("div");
-    msg.className = "message me";
-    msg.innerText = text;
-    chatBox.appendChild(msg);
-    chatBox.scrollTop = chatBox.scrollHeight;
+msg.className = "message me";
+msg.innerText = text;
+
+/* force animation restart */
+msg.style.animation = "none";
+chatBox.appendChild(msg);
+msg.offsetHeight; // reflow
+msg.style.animation = "";
+
+chatBox.scrollTop = chatBox.scrollHeight;
+
   }, 300);
 
   input.value = "";
