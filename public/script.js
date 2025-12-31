@@ -16,8 +16,17 @@ const chatTitle = document.getElementById("chat-title");
 const input = document.getElementById("message-input");
 const sendBtn = document.getElementById("send-btn");
 
+/* STATE */
 let currentUser = null;
 let currentChat = null;
+
+/* ===== AUTO LOGIN ON REFRESH ===== */
+const savedUser = localStorage.getItem("veyon_user");
+const savedPass = localStorage.getItem("veyon_pass");
+
+if (savedUser && savedPass) {
+  attemptLogin(savedUser, savedPass, true);
+}
 
 /* LOGIN CLICK */
 loginBtn.addEventListener("click", () => {
@@ -32,36 +41,52 @@ loginBtn.addEventListener("click", () => {
     return;
   }
 
-  console.log("📤 Sending login:", { username, password });
+  attemptLogin(username, password, false);
+});
 
+/* LOGIN FUNCTION */
+function attemptLogin(username, password, silent) {
   socket.emit("login", { username, password }, res => {
-    console.log("📥 Login response:", res);
-
     if (!res || !res.ok) {
-      loginError.textContent = "You don’t have access to this portal.";
-      loginError.classList.remove("hidden");
+      if (!silent) {
+        loginError.textContent = "You don’t have access to this portal.";
+        loginError.classList.remove("hidden");
+      }
+      localStorage.clear();
       return;
     }
 
     currentUser = username;
+
     localStorage.setItem("veyon_user", username);
+    localStorage.setItem("veyon_pass", password);
 
     loginScreen.classList.add("hidden");
     app.classList.remove("hidden");
 
     renderUsers(res.users);
   });
-});
+}
 
 /* LOGOUT */
 logoutBtn.onclick = () => {
   localStorage.removeItem("veyon_user");
+  localStorage.removeItem("veyon_pass");
   location.reload();
 };
 
 /* USERS */
 function renderUsers(users) {
   userList.innerHTML = "";
+
+  if (!users || users.length === 0) {
+    userList.innerHTML = `
+      <div style="opacity:.6;padding:14px">
+        No users available
+      </div>`;
+    return;
+  }
+
   users.forEach(u => {
     const div = document.createElement("div");
     div.className = "user-card";
@@ -82,7 +107,7 @@ function openChat(user) {
   });
 }
 
-/* SEND */
+/* SEND MESSAGE */
 sendBtn.onclick = sendMessage;
 input.addEventListener("keydown", e => {
   if (e.key === "Enter") sendMessage();
@@ -104,7 +129,7 @@ function sendMessage() {
   input.value = "";
 }
 
-/* RECEIVE */
+/* RECEIVE MESSAGE */
 socket.on("message", msg => {
   if (
     (msg.from === currentChat && msg.to === currentUser) ||
@@ -114,11 +139,12 @@ socket.on("message", msg => {
   }
 });
 
-/* RENDER */
+/* RENDER MESSAGE */
 function renderMessage(msg) {
   const div = document.createElement("div");
   div.className = "message" + (msg.from === currentUser ? " me" : "");
   div.innerText = msg.text;
+
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
