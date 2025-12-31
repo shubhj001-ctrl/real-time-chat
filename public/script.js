@@ -19,16 +19,31 @@ const sendBtn = document.getElementById("send-btn");
 /* STATE */
 let currentUser = null;
 let currentChat = null;
+let socketReady = false;
+
+/* SOCKET READY */
+socket.on("connect", () => {
+  socketReady = true;
+});
 
 /* LOGIN */
 loginBtn.onclick = () => {
+  if (!socketReady) return;
+
   const username = usernameInput.value.trim();
   const password = passwordInput.value.trim();
 
   loginError.classList.add("hidden");
 
+  if (!username || !password) {
+    loginError.innerText = "Username and password are required.";
+    loginError.classList.remove("hidden");
+    return;
+  }
+
   socket.emit("login", { username, password }, res => {
-    if (!res.ok) {
+    if (!res || !res.ok) {
+      loginError.innerText = "You don’t have access to this portal.";
       loginError.classList.remove("hidden");
       return;
     }
@@ -54,7 +69,10 @@ function renderUsers(users) {
   userList.innerHTML = "";
 
   if (!users || users.length === 0) {
-    userList.innerHTML = `<div style="opacity:.6;padding:12px">No users available</div>`;
+    userList.innerHTML = `
+      <div style="opacity:.6;padding:14px">
+        No users available
+      </div>`;
     return;
   }
 
@@ -100,7 +118,7 @@ function sendMessage() {
   input.value = "";
 }
 
-/* RECEIVE MESSAGE */
+/* RECEIVE */
 socket.on("message", msg => {
   if (
     (msg.from === currentChat && msg.to === currentUser) ||

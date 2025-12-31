@@ -241,3 +241,62 @@ body {
 .hidden {
   display: none !important;
 }
+.login-box {
+  background: rgba(47,47,46,0.85);
+  backdrop-filter: blur(16px);
+  padding: 36px 32px;
+  border-radius: 22px;
+  max-width: 420px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+}
+
+.login-box h2 {
+  font-size: 26px;
+  margin-bottom: 4px;
+}
+
+.dev-note {
+  font-size: 14px;
+  line-height: 1.6;
+  opacity: 0.85;
+}
+
+.login-box input {
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(202,169,96,0.3);
+  background: rgba(0,0,0,0.25);
+  color: #caa960;
+  outline: none;
+  font-size: 15px;
+}
+
+.login-box input::placeholder {
+  color: rgba(202,169,96,0.5);
+}
+
+.login-box button {
+  margin-top: 6px;
+  padding: 14px;
+  border-radius: 16px;
+  border: none;
+  background: #caa960;
+  color: #2f2f2e;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.login-box button:hover {
+  box-shadow: 0 10px 30px rgba(202,169,96,0.35);
+}
+
+.login-box button:active {
+  transform: scale(0.97);
+}
