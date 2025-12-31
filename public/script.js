@@ -176,19 +176,33 @@ function renderUsers(users) {
 
 /* OPEN CHAT */
 function openChat(user) {
-  unreadCounts[user] = 0;
-delete unreadCounts[user];
-localStorage.setItem("veyon_unread", JSON.stringify(unreadCounts));
+  // 1️⃣ Set current chat FIRST
   currentChat = user;
-  chatTitle.innerText = user;
-  localStorage.setItem("veyon_last_chat", user);
-  chatBox.innerHTML = "";
+
+  // 2️⃣ Clear unread count IMMEDIATELY
+  if (unreadCounts[user]) {
+    delete unreadCounts[user];
+    localStorage.setItem("veyon_unread", JSON.stringify(unreadCounts));
+  }
+
+  // 3️⃣ Update UI immediately
+  renderUsers(Object.keys(unreadCounts).concat([user]).filter(
+    (v, i, a) => a.indexOf(v) === i
+  ));
+
+  // 4️⃣ Reset typing bubble (safety)
   typingBubble.classList.add("hidden");
-typingBubble.classList.remove("show");
+  typingBubble.classList.remove("show");
+
+  // 5️⃣ Load chat messages
+  chatTitle.innerText = user;
+  chatBox.innerHTML = "";
+
   socket.emit("loadMessages", { withUser: user }, msgs => {
     msgs.forEach(renderMessage);
   });
 }
+
 
 /* SEND MESSAGE */
 sendBtn.onclick = sendMessage;
@@ -214,27 +228,22 @@ function sendMessage() {
 
 /* RECEIVE MESSAGE */
 socket.on("message", msg => {
-  const isCurrentChat =
-    currentChat === msg.from &&
-    msg.to === currentUser;
+  const isIncoming = msg.to === currentUser;
+  const isCurrentChat = msg.from === currentChat;
 
-  if (!isCurrentChat && msg.to === currentUser) {
+  // 🔔 Increment unread ONLY if chat is NOT open
+  if (isIncoming && !isCurrentChat) {
     unreadCounts[msg.from] = (unreadCounts[msg.from] || 0) + 1;
     localStorage.setItem("veyon_unread", JSON.stringify(unreadCounts));
+
     renderUsers(
       Object.keys(unreadCounts)
         .concat(currentChat ? [currentChat] : [])
         .filter((v, i, a) => a.indexOf(v) === i)
-        
     );
-    renderUsers(
-  Object.keys(unreadCounts)
-    .concat([user])
-    .filter((v, i, a) => a.indexOf(v) === i)
-);
-
   }
 
+  // 💬 Render message only if it belongs to open chat
   if (
     (msg.from === currentChat && msg.to === currentUser) ||
     (msg.from === currentUser && msg.to === currentChat)

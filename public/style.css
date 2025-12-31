@@ -434,6 +434,7 @@ body {
   display: none;
   align-items: center;
   justify-content: center;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .unread-badge.show {
