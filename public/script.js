@@ -7,6 +7,9 @@ const loadingWord = document.getElementById("loading-word");
 const typingBubble = document.getElementById("typing-bubble");
 const chatFooter = document.getElementById("chat-footer");
 const emptyChat = document.getElementById("empty-chat");
+const loader = document.getElementById("app-loader");
+const appView = document.getElementById("app-view");
+
 
 
 let replyTarget = null;
@@ -354,3 +357,7 @@ function jumpToMessage(id) {
   setTimeout(() => el.classList.remove("highlight"), 1200);
 }
 
+function hideLoader() {
+  loader.classList.add("hidden");
+  appView.classList.remove("hidden");
+}
