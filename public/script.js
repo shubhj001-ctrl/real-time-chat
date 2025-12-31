@@ -13,6 +13,8 @@ let charIndex = 0;
 let unreadCounts = JSON.parse(
   localStorage.getItem("veyon_unread") || "{}"
 );
+let allUsers = [];
+
 
 
 /* Smooth letter-by-letter typing */
@@ -127,7 +129,8 @@ return;
     loginScreen.classList.add("hidden");
     app.classList.remove("hidden");
 
-    renderUsers(res.users);
+    allUsers = res.users;
+renderUsers(allUsers);
     const lastChat = localStorage.getItem("veyon_last_chat");
 if (lastChat) {
   setTimeout(() => {
@@ -147,7 +150,7 @@ logoutBtn.onclick = () => {
 };
 
 /* USERS */
-function renderUsers(users) {
+function renderUsers(users=allUsers) {
   userList.innerHTML = "";
 
   users.forEach(u => {
@@ -185,10 +188,12 @@ function openChat(user) {
     localStorage.setItem("veyon_unread", JSON.stringify(unreadCounts));
   }
 
-  // 3️⃣ Update UI immediately
-  renderUsers(Object.keys(unreadCounts).concat([user]).filter(
-    (v, i, a) => a.indexOf(v) === i
-  ));
+if (unreadCounts[user]) {
+  delete unreadCounts[user];
+  localStorage.setItem("veyon_unread", JSON.stringify(unreadCounts));
+}
+
+renderUsers(allUsers);
 
   // 4️⃣ Reset typing bubble (safety)
   typingBubble.classList.add("hidden");
