@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+  
   const socket = io();
 
   /* ========= ELEMENTS ========= */
@@ -42,7 +43,6 @@ let typingInterval = null;
 const loadingWord = document.getElementById("loading-word");
 
 function startTypingOnce(onComplete) {
-  // Safety: clear any previous interval
   if (typingInterval) clearInterval(typingInterval);
 
   loadingWord.textContent = "";
@@ -56,13 +56,20 @@ function startTypingOnce(onComplete) {
       clearInterval(typingInterval);
       typingInterval = null;
 
-      // small pause feels premium
       setTimeout(() => {
         onComplete && onComplete();
       }, 400);
     }
   }, 200);
 }
+startTypingOnce(() => {
+  loadingScreen.classList.add("fade-out");
+  setTimeout(() => {
+    loadingScreen.style.display = "none";
+    loginScreen.classList.remove("hidden");
+  }, 600);
+});
+
 
   /* ========= LOGIN ========= */
   loginBtn.onclick = () => {
