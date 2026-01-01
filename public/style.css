@@ -188,9 +188,15 @@ body {
 }
 /* SUBTLE SEND ANIMATION */
 .message {
+  max-width: 65%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  background: rgba(202,169,96,0.14);
   animation: messageIn 240ms cubic-bezier(0.22, 0.61, 0.36, 1);
   transform-origin: bottom;
 }
+
 
 @keyframes messageIn {
   from {
