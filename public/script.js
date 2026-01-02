@@ -103,7 +103,6 @@ const backBtn = document.getElementById("back-btn");
 if (backBtn) {
   backBtn.onclick = () => {
     document.querySelector(".chat-area").classList.remove("active");
-    document.querySelector(".chat-area").style.display = "none";
     document.querySelector(".sidebar").style.display = "flex";
     currentChat = null;
   };
@@ -235,11 +234,13 @@ mediaInput.onchange = async () => {
   }
 
   /* ========= CHAT ========= */
-  function showEmptyChat() {
-    emptyChat.classList.remove("hidden");
-    chatBox.classList.add("hidden");
-    chatFooter.classList.add("hidden");
-  }
+function showEmptyChat() {
+  chatTitle.textContent = "Select a chat"; // desktop only
+  emptyChat.classList.remove("hidden");
+  chatBox.classList.add("hidden");
+  chatFooter.classList.add("hidden");
+}
+
 
   function scrollIfNearBottom() {
   const threshold = 120;
@@ -254,6 +255,7 @@ mediaInput.onchange = async () => {
 
   function openChat(user) {
   currentChat = user;
+
   localStorage.setItem("veyon_last_chat", user);
 
   const sidebar = document.querySelector(".sidebar");
@@ -265,6 +267,7 @@ mediaInput.onchange = async () => {
     chatArea.style.display = "flex";
     chatArea.classList.add("active");
   }
+   chatTitle.textContent = user;
 
   emptyChat.classList.add("hidden");
   chatBox.classList.remove("hidden");
@@ -284,6 +287,7 @@ mediaInput.onchange = async () => {
 
   setTimeout(() => {
     input.disabled = false;
+    input.removeAttribute("disabled");
     input.focus();
   }, 100);
 

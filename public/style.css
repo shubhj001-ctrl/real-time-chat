@@ -135,20 +135,23 @@ body {
   transition: transform 0.15s ease;
 }
 
+/* DESKTOP */
 .chat-input {
-  position: fixed;
-  left: 0;
-  right: 0;
+  position: sticky;
   bottom: 0;
+  z-index: 10;
+  width: 100%;
+}
 
-  padding: 14px;
-  background: rgba(47, 47, 46, 0.95);
-  border-top: 1px solid rgba(202,169,96,0.2);
-
-  display: flex;
-  gap: 10px;
-
-  z-index: 1000;
+/* MOBILE ONLY */
+@media (max-width: 768px) {
+  .chat-input {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+  }
 }
 
 
@@ -628,4 +631,7 @@ body {
   font-size: 20px;
   color: #caa960;
   cursor: pointer;
+}
+.chat-messages {
+  padding-bottom: 90px;
 }
