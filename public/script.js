@@ -143,6 +143,11 @@ startTypingOnce(() => {
     emptyChat.classList.add("hidden");
     chatBox.classList.remove("hidden");
     chatFooter.classList.remove("hidden");
+setTimeout(() => {
+  input.removeAttribute("readonly");
+  input.disabled = false;
+  input.focus();
+}, 100);
 
     unreadCounts[user] && delete unreadCounts[user];
     localStorage.setItem("veyon_unread", JSON.stringify(unreadCounts));
@@ -157,8 +162,7 @@ startTypingOnce(() => {
 
   // ✅ focus input after chat opens
   setTimeout(() => {
-  input.focus();
-  input.click(); // desktop Safari/Chrome fix
+  input.focus(); // desktop Safari/Chrome fix
 }, 50);
 
 });
@@ -166,7 +170,13 @@ startTypingOnce(() => {
   }
 
   sendBtn.onclick = sendMessage;
-  input.onkeydown = e => e.key === "Enter" && sendMessage();
+  input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault(); // prevent form submit
+    sendMessage();
+  }
+});
+
 
   function sendMessage() {
     if (!currentChat || !input.value.trim()) return;
