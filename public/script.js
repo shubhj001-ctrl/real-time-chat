@@ -231,6 +231,12 @@ input.addEventListener("input", () => {
       to: currentChat,
       text: input.value.trim(),
       replyTo: replyTarget
+       ? {
+        id: replyTarget.id,
+        from: replyTarget.from,
+        text: replyTarget.text
+      }
+    : null
     };
 
     socket.emit("sendMessage", msg);
@@ -255,20 +261,39 @@ input.addEventListener("input", () => {
   });
 
   function renderMessage(msg) {
-    const div = document.createElement("div");
-    div.className = "message" + (msg.from === currentUser ? " me" : "");
-    div.textContent = msg.text;
+  const div = document.createElement("div");
+  div.className = "message" + (msg.from === currentUser ? " me" : "");
+  div.dataset.id = msg.id;
 
-    div.onclick = () => {
-      replyTarget = msg;
-      replyUser.textContent = msg.from;
-      replyText.textContent = msg.text;
-      replyPreview.classList.remove("hidden");
-    };
+  // ✅ Render reply preview INSIDE message
+  if (msg.replyTo) {
+    const replyBox = document.createElement("div");
+    replyBox.className = "reply-inside";
+    replyBox.innerHTML = `
+      <strong>${msg.replyTo.from}</strong>
+      <span>${msg.replyTo.text}</span>
+    `;
 
-    chatBox.appendChild(div);
-    chatBox.scrollTop = chatBox.scrollHeight;
+    replyBox.onclick = () => jumpToMessage(msg.replyTo.id);
+    div.appendChild(replyBox);
   }
+
+  const text = document.createElement("div");
+  text.textContent = msg.text;
+  div.appendChild(text);
+
+  // Click message to reply
+  div.onclick = () => {
+    replyTarget = msg;
+    replyUser.textContent = msg.from;
+    replyText.textContent = msg.text;
+    replyPreview.classList.remove("hidden");
+    input.focus();
+  };
+
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
 
   cancelReplyBtn.onclick = () => {
     replyTarget = null;
@@ -280,3 +305,12 @@ document.addEventListener("click", () => {
     input.focus();
   }
 });
+function jumpToMessage(id) {
+  const el = document.querySelector(`[data-id="${id}"]`);
+  if (!el) return;
+
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.classList.add("highlight");
+
+  setTimeout(() => el.classList.remove("highlight"), 1200);
+}
