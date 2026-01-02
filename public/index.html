@@ -52,6 +52,8 @@
 
   <header class="chat-header">
     <span id="chat-title">Select a chat</span>
+    <button id="back-btn" class="mobile-only">←</button>
+  <span id="chat-title">Select a chat</span>
   </header>
 
   <div id="empty-chat" class="empty-chat">
@@ -74,6 +76,14 @@
         <span id="reply-text"></span>
       </div>
       <button id="cancel-reply">✕</button>
+      <button id="media-btn">📎</button>
+<input
+  type="file"
+  id="media-input"
+  accept="image/*,video/*"
+  hidden
+/>
+
     </div>
 
     <input id="message-input" placeholder="Type a message" disabled>

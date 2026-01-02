@@ -130,6 +130,52 @@ if (window.visualViewport) {
   viewport.addEventListener("scroll", adjustForKeyboard);
 }
 
+const mediaBtn = document.getElementById("media-btn");
+const mediaInput = document.getElementById("media-input");
+
+mediaBtn.onclick = () => mediaInput.click();
+
+mediaInput.onchange = async () => {
+  const file = mediaInput.files[0];
+  if (!file || !currentChat) return;
+
+  const isImage = file.type.startsWith("image/");
+  const isVideo = file.type.startsWith("video/");
+
+  // ❌ Invalid file
+  if (!isImage && !isVideo) {
+    alert("Only images and videos are allowed");
+    return;
+  }
+
+  // ❌ Size limits
+  if (isImage && file.size > 8 * 1024 * 1024) {
+    alert("Image must be under 8MB");
+    return;
+  }
+
+  if (isVideo && file.size > 50 * 1024 * 1024) {
+    alert("Video must be under 50MB");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    socket.emit("sendMedia", {
+      id: "msg_" + Date.now(),
+      from: currentUser,
+      to: currentChat,
+      type: isImage ? "image" : "video",
+      name: file.name,
+      data: reader.result
+    });
+  };
+
+  reader.readAsDataURL(file);
+  mediaInput.value = "";
+};
+
+
   /* ========= LOGIN ========= */
   loginBtn.onclick = () => {
     const u = usernameInput.value.trim();
@@ -289,27 +335,30 @@ input.addEventListener("input", () => {
 
 
   function sendMessage() {
-    if (!currentChat || !input.value.trim()) return;
+  if (!currentChat || !input.value.trim()) return;
 
-    const msg = {
-      id: "msg_" + Date.now(),
-      from: currentUser,
-      to: currentChat,
-      text: input.value.trim(),
-      replyTo: replyTarget
-       ? {
-        id: replyTarget.id,
-        from: replyTarget.from,
-        text: replyTarget.text
-      }
-    : null
-    };
+  socket.emit("sendMessage", {
+    id: "msg_" + Date.now(),
+    from: currentUser,
+    to: currentChat,
+    text: input.value.trim(),
+    replyTo: replyTarget
+      ? {
+          id: replyTarget.id,
+          from: replyTarget.from,
+          text: replyTarget.text
+        }
+      : null
+  });
 
-    socket.emit("sendMessage", msg);
-    replyTarget = null;
-    replyPreview.classList.add("hidden");
-    input.value = "";
-  }
+  replyTarget = null;
+  replyPreview.classList.add("hidden");
+  input.value = "";
+
+  // 🔥 keep keyboard open
+  setTimeout(() => input.focus(), 0);
+}
+
 
   socket.on("message", msg => {
     if (msg.to === currentUser && msg.from !== currentChat) {
@@ -326,12 +375,26 @@ input.addEventListener("input", () => {
     }
   });
 
-  function renderMessage(msg) {
+  socket.on("media", msg => {
+  if (
+    (msg.from === currentChat && msg.to === currentUser) ||
+    (msg.from === currentUser && msg.to === currentChat)
+  ) {
+    renderMessage(msg);
+  } else {
+    unreadCounts[msg.from] = (unreadCounts[msg.from] || 0) + 1;
+    localStorage.setItem("veyon_unread", JSON.stringify(unreadCounts));
+    renderUsers();
+  }
+});
+
+
+ function renderMessage(msg) {
   const div = document.createElement("div");
   div.className = "message" + (msg.from === currentUser ? " me" : "");
   div.dataset.id = msg.id;
 
-  // ✅ Render reply preview INSIDE message
+  // 🔁 Reply preview (unchanged)
   if (msg.replyTo) {
     const replyBox = document.createElement("div");
     replyBox.className = "reply-inside";
@@ -339,20 +402,44 @@ input.addEventListener("input", () => {
       <strong>${msg.replyTo.from}</strong>
       <span>${msg.replyTo.text}</span>
     `;
-
     replyBox.onclick = () => jumpToMessage(msg.replyTo.id);
     div.appendChild(replyBox);
   }
 
-  const text = document.createElement("div");
-  text.textContent = msg.text;
-  div.appendChild(text);
+  // 🖼 IMAGE
+  if (msg.type === "image") {
+    const img = document.createElement("img");
+    img.src = msg.data;
+    img.style.maxWidth = "220px";
+    img.style.borderRadius = "10px";
+    img.style.cursor = "pointer";
 
-  // Click message to reply
+    div.appendChild(img);
+  }
+
+  // 🎥 VIDEO
+  else if (msg.type === "video") {
+    const video = document.createElement("video");
+    video.src = msg.data;
+    video.controls = true;
+    video.style.maxWidth = "240px";
+    video.style.borderRadius = "10px";
+
+    div.appendChild(video);
+  }
+
+  // 💬 TEXT
+  else {
+    const text = document.createElement("div");
+    text.textContent = msg.text;
+    div.appendChild(text);
+  }
+
+  // Click to reply
   div.onclick = () => {
     replyTarget = msg;
     replyUser.textContent = msg.from;
-    replyText.textContent = msg.text;
+    replyText.textContent = msg.text || "Media";
     replyPreview.classList.remove("hidden");
     input.focus();
   };
@@ -391,3 +478,9 @@ function scrollIfNearBottom() {
     chatBox.scrollTop = height;
   }
 }
+document.addEventListener("touchend", (e) => {
+  if (e.target === input) {
+    e.preventDefault();
+    input.focus();
+  }
+}, { passive: false });
