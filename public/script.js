@@ -245,7 +245,6 @@ function showEmptyChat() {
 
 }
 
-
   sendBtn.onclick = sendMessage;
   input.addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
@@ -275,7 +274,7 @@ input.addEventListener("input", () => {
   if (!currentChat) return;
   if (!input.value.trim() && !selectedMedia) return;
 
-  const baseMsg = {
+  const msg = {
     id: "msg_" + Date.now(),
     from: currentUser,
     to: currentChat,
@@ -289,42 +288,43 @@ input.addEventListener("input", () => {
       : null
   };
 
-  // CASE 1: MEDIA MESSAGE
+  // MEDIA
   if (selectedMedia) {
     const reader = new FileReader();
-
     reader.onload = () => {
-      const mediaMsg = {
-        ...baseMsg,
-        media: {
-          name: selectedMedia.name,
-          type: selectedMedia.type,
-          data: reader.result
-        }
+      msg.media = {
+        name: selectedMedia.name,
+        type: selectedMedia.type,
+        data: reader.result
       };
 
-      socket.emit("sendMessage", mediaMsg);
-    };
+      socket.emit("sendMessage", msg);
 
+      // 🔥 IMMEDIATELY SHOW MESSAGE
+      renderMessage(msg);
+    };
     reader.readAsDataURL(selectedMedia);
   }
 
-  // CASE 2: TEXT ONLY
+  // TEXT ONLY
   else {
-    socket.emit("sendMessage", baseMsg);
+    socket.emit("sendMessage", msg);
+
+    // 🔥 IMMEDIATELY SHOW MESSAGE
+    renderMessage(msg);
   }
 
-  // RESET UI (always)
+  // RESET UI
   input.value = "";
   mediaInput.value = "";
   selectedMedia = null;
-  mediaThumb.innerHTML = "";
-  mediaPreview.classList.add("hidden");
+  mediaPreview?.classList.add("hidden");
   replyTarget = null;
   replyPreview.classList.add("hidden");
 
   input.focus();
 }
+
 
 
   socket.on("message", msg => {
