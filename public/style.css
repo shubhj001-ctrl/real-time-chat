@@ -577,6 +577,10 @@ body {
   pointer-events: auto;
   z-index: 10000;
   position: relative;
+   flex: 1;
+  min-height: 44px;
+  padding: 12px 14px;
+  border-radius: 14px;
 }
 /* =========================
    MOBILE CHAT LAYOUT
@@ -652,9 +656,92 @@ body {
   align-items: center;
   gap: 10px;
 }
+
+.media-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(202,169,96,0.15);
+  border: 1px solid rgba(202,169,96,0.35);
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.media-btn:hover {
+  background: rgba(202,169,96,0.25);
+}
+
+.media-icon {
+  width: 18px;
+  height: 18px;
+  position: relative;
+}
+
+.media-icon::before,
+.media-icon::after {
+  content: "";
+  position: absolute;
+  background: #caa960;
+  border-radius: 2px;
+}
+
+/* vertical */
+.media-icon::before {
+  width: 3px;
+  height: 18px;
+  left: 7.5px;
+}
+
+/* horizontal */
+.media-icon::after {
+  height: 3px;
+  width: 18px;
+  top: 7.5px;
+}
+.chat-input {
+  padding: 10px 14px;
+  background: rgba(47,47,46,0.85);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(202,169,96,0.2);
+
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+}
+
+/* INPUT ROW */
+.input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* TEXT INPUT */
 #message-input {
   flex: 1;
-  min-height: 44px;
-  padding: 12px 14px;
+  height: 44px;
+  padding: 0 14px;
   border-radius: 14px;
+  border: none;
+  outline: none;
+
+  background: rgba(0,0,0,0.4);
+  color: #caa960;
 }
+
+/* SEND BUTTON */
+#send-btn {
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+
+  background: #caa960;
+  color: #2f2f2e;
+  font-weight: 600;
+}
+
