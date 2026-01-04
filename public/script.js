@@ -339,6 +339,30 @@ input.addEventListener("input", () => {
  function renderMessage(msg) {
   const div = document.createElement("div");
   div.className = "message" + (msg.from === currentUser ? " me" : "");
+div.dataset.id = msg.id;
+    // TAP TO REPLY
+  div.onclick = () => {
+    replyTarget = msg;
+
+    replyUser.textContent = msg.from;
+    replyText.textContent =
+      msg.text ||
+      (msg.media
+        ? msg.media.type.startsWith("image/")
+          ? "📷 Photo"
+          : "🎥 Video"
+        : "");
+replyPreview.onclick = () => {
+  if (replyTarget?.id) {
+    jumpToMessage(replyTarget.id);
+  }
+};
+
+    replyPreview.classList.remove("hidden");
+
+    input.focus();
+  };
+
 
   if (msg.replyTo) {
     const reply = document.createElement("div");
