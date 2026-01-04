@@ -3,6 +3,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const socket = io();
 
   /* ========= ELEMENTS ========= */
+  const mediaPreview = document.getElementById("media-preview");
+const mediaThumb = mediaPreview.querySelector(".media-thumb");
+const removeMediaBtn = document.getElementById("remove-media");
   const loadingScreen = document.getElementById("loading-screen");
   const loginScreen = document.getElementById("login-screen");
   const app = document.getElementById("app");
@@ -428,25 +431,26 @@ mediaInput.addEventListener("change", () => {
   const isImage = file.type.startsWith("image/");
   const isVideo = file.type.startsWith("video/");
 
-  if (!isImage && !isVideo) {
-    alert("Only images or videos are allowed");
-    mediaInput.value = "";
-    return;
-  }
-
-  if (isImage && file.size > 8 * 1024 * 1024) {
-    alert("Image must be under 8 MB");
-    mediaInput.value = "";
-    return;
-  }
-
-  if (isVideo && file.size > 50 * 1024 * 1024) {
-    alert("Video must be under 50 MB");
-    mediaInput.value = "";
-    return;
-  }
+  // size checks already done by you earlier
 
   selectedMedia = file;
-  input.focus();
+  mediaThumb.innerHTML = "";
+
+  if (isImage) {
+    const img = document.createElement("img");
+    img.src = URL.createObjectURL(file);
+    mediaThumb.appendChild(img);
+  }
+
+  if (isVideo) {
+    const video = document.createElement("video");
+    video.src = URL.createObjectURL(file);
+    video.muted = true;
+    video.playsInline = true;
+    mediaThumb.appendChild(video);
+  }
+
+  mediaPreview.classList.remove("hidden");
 });
+
 });
