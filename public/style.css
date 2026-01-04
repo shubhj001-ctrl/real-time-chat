@@ -150,9 +150,15 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 100;
+
+    padding: 10px;
+    background: #3b3b3a;
+
+    display: flex;
+    gap: 8px;
   }
 }
+
 
 
 
@@ -178,6 +184,10 @@ body {
 .chat-header {
   background: rgba(47, 47, 46, 0.75);
   backdrop-filter: blur(14px);
+}
+/* Hide header when no chat is selected (desktop only) */
+.chat-area:not(.active) .chat-header {
+  display: none;
 }
 
 
@@ -634,4 +644,10 @@ body {
 }
 .chat-messages {
   padding-bottom: 90px;
+}
+.chat-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
 }
