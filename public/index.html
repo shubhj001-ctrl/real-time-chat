@@ -51,7 +51,6 @@
   <main class="chat-area">
 
   <header class="chat-header">
-    <span id="chat-title">Select a chat</span>
     <button id="back-btn" class="mobile-only">←</button>
   <span id="chat-title">Select a chat</span>
   </header>
@@ -68,27 +67,40 @@
     </div>
   </div>
 
-  <footer class="chat-input hidden" id="chat-footer">
-    <div id="reply-preview" class="reply-preview hidden">
-      <div class="reply-line"></div>
-      <div class="reply-content">
-        <span id="reply-user"></span>
-        <span id="reply-text"></span>
-      </div>
-      <button id="cancel-reply">✕</button>
-      <button id="media-btn">📎</button>
-<input
-  type="file"
-  id="media-input"
-  accept="image/*,video/*"
-  hidden
-/>
+ <footer class="chat-input hidden" id="chat-footer">
 
+  <!-- REPLY PREVIEW (ONLY FOR REPLIES) -->
+  <div id="reply-preview" class="reply-preview hidden">
+    <div class="reply-line"></div>
+    <div class="reply-content">
+      <span id="reply-user"></span>
+      <span id="reply-text"></span>
     </div>
+    <button id="cancel-reply">×</button>
+  </div>
 
-    <input id="message-input" placeholder="Type a message" disabled>
+  <!-- INPUT ROW (ALWAYS VISIBLE) -->
+  <div class="input-row">
+    <button id="media-btn" class="media-btn" type="button">
+      <span class="media-icon"></span>
+    </button>
+
+    <input
+      id="message-input"
+      placeholder="Type a message"
+      disabled
+    />
+
     <button id="send-btn">Send</button>
-  </footer>
+  </div>
+
+  <input
+    type="file"
+    id="media-input"
+    accept="image/*,video/*"
+    hidden
+  />
+</footer>
 
 </main>
 

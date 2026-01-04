@@ -137,6 +137,11 @@ const mediaBtn = document.getElementById("media-btn");
 const mediaInput = document.getElementById("media-input");
 
 mediaBtn.onclick = () => mediaInput.click();
+mediaInput.addEventListener("change", () => {
+  const file = mediaInput.files[0];
+  if (!file) return;
+  selectedMedia = file;
+});
 
   /* ========= LOGIN ========= */
   loginBtn.onclick = () => {
@@ -342,30 +347,17 @@ input.addEventListener("input", () => {
  function renderMessage(msg) {
   const div = document.createElement("div");
   div.className = "message" + (msg.from === currentUser ? " me" : "");
-div.dataset.id = msg.id;
-    // TAP TO REPLY
+  div.dataset.id = msg.id;
+
+  // 🔹 TAP TO REPLY
   div.onclick = () => {
     replyTarget = msg;
 
-    replyUser.textContent = msg.from;
-    replyText.textContent =
-      msg.text ||
-      (msg.media
-        ? msg.media.type.startsWith("image/")
-          ? "📷 Photo"
-          : "🎥 Video"
-        : "");
-replyPreview.onclick = () => {
-  if (replyTarget?.id) {
-    jumpToMessage(replyTarget.id);
-  }
-};
+    replyUser.textContent = msg.from === currentUser ? "You" : msg.from;
+    replyText.textContent = msg.text || (msg.media ? "Media message" : "");
 
     replyPreview.classList.remove("hidden");
-
-    input.focus();
   };
-
 
   if (msg.replyTo) {
     const reply = document.createElement("div");
@@ -399,8 +391,6 @@ replyPreview.onclick = () => {
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
-
-
   cancelReplyBtn.onclick = () => {
     replyTarget = null;
     replyPreview.classList.add("hidden");
