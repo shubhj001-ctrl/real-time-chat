@@ -234,8 +234,9 @@ function showEmptyChat() {
 
   socket.emit("loadMessages", { withUser: user }, msgs => {
     msgs.forEach(renderMessage);
-    scrollifnearBottom();
+    scrollifnearBottom();{
     chatBox.scrollTop = chatBox.scrollHeight;
+    }
   });
 
   setTimeout(() => {
@@ -270,11 +271,11 @@ input.addEventListener("input", () => {
   }, 900);
 });
 
- function sendMessage() {
+function sendMessage() {
   if (!currentChat) return;
   if (!input.value.trim() && !selectedMedia) return;
 
-  const msg = {
+  const baseMsg = {
     id: "msg_" + Date.now(),
     from: currentUser,
     to: currentChat,
@@ -288,37 +289,39 @@ input.addEventListener("input", () => {
       : null
   };
 
-  // MEDIA
+  // MEDIA MESSAGE
   if (selectedMedia) {
     const reader = new FileReader();
+
     reader.onload = () => {
-      msg.media = {
-        name: selectedMedia.name,
-        type: selectedMedia.type,
-        data: reader.result
+      const msg = {
+        ...baseMsg,
+        media: {
+          name: selectedMedia.name,
+          type: selectedMedia.type,
+          data: reader.result
+        }
       };
 
-      socket.emit("sendMessage", msg);
-
-      // 🔥 IMMEDIATELY SHOW MESSAGE
+      // 🔥 render ONCE (media guaranteed)
       renderMessage(msg);
+      socket.emit("sendMessage", msg);
     };
+
     reader.readAsDataURL(selectedMedia);
   }
 
   // TEXT ONLY
   else {
-    socket.emit("sendMessage", msg);
-
-    // 🔥 IMMEDIATELY SHOW MESSAGE
-    renderMessage(msg);
+    renderMessage(baseMsg);
+    socket.emit("sendMessage", baseMsg);
   }
 
   // RESET UI
   input.value = "";
   mediaInput.value = "";
   selectedMedia = null;
-  mediaPreview?.classList.add("hidden");
+  mediaPreview.classList.add("hidden");
   replyTarget = null;
   replyPreview.classList.add("hidden");
 
@@ -326,21 +329,16 @@ input.addEventListener("input", () => {
 }
 
 
+ socket.on("message", msg => {
+  // Ignore my own message (already rendered optimistically)
+  if (msg.from === currentUser) return;
 
-  socket.on("message", msg => {
-    if (msg.to === currentUser && msg.from !== currentChat) {
-      unreadCounts[msg.from] = (unreadCounts[msg.from] || 0) + 1;
-      localStorage.setItem("veyon_unread", JSON.stringify(unreadCounts));
-      renderUsers();
-    }
-
-    if (
-      (msg.from === currentChat && msg.to === currentUser) ||
-      (msg.from === currentUser && msg.to === currentChat)
-    ) {
-      renderMessage(msg);
-    }
-  });
+  if (
+    (msg.from === currentChat && msg.to === currentUser)
+  ) {
+    renderMessage(msg);
+  }
+});
 
   socket.on("media", msg => {
   if (
@@ -359,18 +357,8 @@ input.addEventListener("input", () => {
  function renderMessage(msg) {
   const div = document.createElement("div");
   div.className = "message" + (msg.from === currentUser ? " me" : "");
-  div.dataset.id = msg.id;
 
-  // 🔹 TAP TO REPLY
-  div.onclick = () => {
-    replyTarget = msg;
-
-    replyUser.textContent = msg.from === currentUser ? "You" : msg.from;
-    replyText.textContent = msg.text || (msg.media ? "Media message" : "");
-
-    replyPreview.classList.remove("hidden");
-  };
-
+  // REPLY
   if (msg.replyTo) {
     const reply = document.createElement("div");
     reply.className = "reply-inside";
@@ -378,22 +366,27 @@ input.addEventListener("input", () => {
     div.appendChild(reply);
   }
 
+  // MEDIA
   if (msg.media) {
-    if (msg.media.type.startsWith("image/")) {
+    if (msg.media.type.startsWith("image")) {
       const img = document.createElement("img");
       img.src = msg.media.data;
-      img.style.maxWidth = "220px";
-      img.style.borderRadius = "10px";
+      img.style.maxWidth = "240px";
+      img.style.borderRadius = "12px";
       div.appendChild(img);
-    } else {
+    }
+
+    if (msg.media.type.startsWith("video")) {
       const video = document.createElement("video");
       video.src = msg.media.data;
       video.controls = true;
-      video.style.maxWidth = "240px";
+      video.style.maxWidth = "260px";
+      video.style.borderRadius = "12px";
       div.appendChild(video);
     }
   }
 
+  // TEXT
   if (msg.text) {
     const text = document.createElement("div");
     text.textContent = msg.text;
