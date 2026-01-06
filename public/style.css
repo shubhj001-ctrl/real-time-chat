@@ -676,6 +676,13 @@ body {
    MESSAGE + REPLY (FINAL)
    ========================= */
 
+@media (min-width: 769px) {
+  body {
+    font-size: 25px; /* default is ~14px */
+  }
+}
+
+
 .message {
   max-width: 65%;
   padding: 10px 14px;
@@ -729,8 +736,3 @@ body {
 /* =========================
    DESKTOP FONT SCALE (+2px)
    ========================= */
-@media (min-width: 769px) {
-  body {
-    font-size: 25px; /* default is ~14px */
-  }
-}
