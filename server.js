@@ -77,26 +77,18 @@ io.on("connection", socket => {
     cb(messages[key] || []);
   });
 
-  // SEND MESSAGE
-  socket.on("sendMessage", msg => {
+ socket.on("sendMessage", msg => {
   const key = chatKey(msg.from, msg.to);
   if (!messages[key]) messages[key] = [];
   messages[key].push(msg);
 
   const toSocket = userSockets.get(msg.to);
-  const fromSocket = userSockets.get(msg.from);
 
-  // send to receiver
+  // send ONLY to receiver
   if (toSocket) {
     io.to(toSocket).emit("message", msg);
   }
-
-  // send to sender (ONLY ONCE)
-  if (fromSocket && fromSocket !== toSocket) {
-    io.to(fromSocket).emit("message", msg);
-  }
 });
-
 
   // DISCONNECT
   socket.on("disconnect", () => {
