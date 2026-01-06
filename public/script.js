@@ -246,7 +246,6 @@ emptyChat.style.display = "none"; // 🔥 THIS FIXES IT
   }
 
   chatTitle.textContent = user;
-  emptyChat.classList.add("hidden");
   chatBox.classList.remove("hidden");
   chatFooter.classList.remove("hidden");
 
@@ -256,11 +255,11 @@ emptyChat.style.display = "none"; // 🔥 THIS FIXES IT
 
   chatBox.innerHTML = "";
 
-  socket.emit("loadMessages", { withUser: user }, msgs => {
-    msgs.forEach(renderMessage);
-    scrollifnearBottom();
-    chatBox.scrollTop = chatBox.scrollHeight;
-  });
+socket.emit("loadMessages", { withUser: user }, msgs => {
+  msgs.forEach(renderMessage);
+  chatBox.scrollTop = chatBox.scrollHeight;
+});
+
 
   setTimeout(() => {
     input.disabled = false;
@@ -373,24 +372,22 @@ input.addEventListener("input", () => {
   div.className = "message" + (msg.from === currentUser ? " me" : "");
   div.dataset.id = msg.id;
 
-  // RIGHT CLICK / LONG PRESS TO REPLY
+  // Reply trigger
   div.oncontextmenu = (e) => {
     e.preventDefault();
     startReply(msg);
   };
 
-  // REPLY INSIDE MESSAGE
+  // Reply preview inside message
   if (msg.replyTo) {
     const reply = document.createElement("div");
     reply.className = "reply-inside";
-    reply.textContent = msg.replyTo.text;
-
+    reply.textContent = msg.replyTo.text || "Media message";
     reply.onclick = () => jumpToMessage(msg.replyTo.id);
-
     div.appendChild(reply);
   }
 
-  // MEDIA
+  // Media
   if (msg.media) {
     if (msg.media.type.startsWith("image/")) {
       const imgWrapper = document.createElement("div");
@@ -411,12 +408,21 @@ input.addEventListener("input", () => {
     }
   }
 
-  // TEXT
+  // Text
   if (msg.text) {
     const text = document.createElement("div");
     text.textContent = msg.text;
     div.appendChild(text);
   }
+
+  // Timestamp
+  const ts = msg.timestamp || msg.createdAt || msg.id.replace("msg_", "");
+time.textContent = new Date(Number(ts)).toLocaleTimeString([], {
+  hour: "2-digit",
+  minute: "2-digit"
+});
+
+  div.appendChild(time);
 
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
@@ -445,12 +451,6 @@ function jumpToMessage(id) {
 
   setTimeout(() => el.classList.remove("highlight"), 1200);
 }
-
-document.getElementById("back-btn").onclick = () => {
-  document.querySelector(".chat-area").classList.remove("active");
-  document.querySelector(".sidebar").style.display = "flex";
-  currentChat = null;
-};
 document.addEventListener("touchend", (e) => {
   if (e.target === input) {
     e.preventDefault();

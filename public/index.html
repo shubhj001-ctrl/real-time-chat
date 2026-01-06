@@ -68,27 +68,39 @@
     </div>
   </div>
 
-  <footer class="chat-input hidden" id="chat-footer">
-    <div id="reply-preview" class="reply-preview hidden">
-      <div class="reply-line"></div>
-      <div class="reply-content">
-        <span id="reply-user"></span>
-        <span id="reply-text"></span>
-      </div>
-      <button id="cancel-reply">✕</button>
-      <button id="media-btn">📎</button>
-<input
-  type="file"
-  id="media-input"
-  accept="image/*,video/*"
-  hidden
-/>
+<footer class="chat-input hidden" id="chat-footer">
 
+  <!-- Reply preview -->
+  <div id="reply-preview" class="reply-preview hidden">
+    <div class="reply-line"></div>
+    <div class="reply-content">
+      <span id="reply-user"></span>
+      <span id="reply-text"></span>
     </div>
+    <button id="cancel-reply">✕</button>
+  </div>
 
-    <input id="message-input" placeholder="Type a message" disabled>
-    <button id="send-btn">Send</button>
-  </footer>
+  <!-- Input row -->
+  <div class="chat-input-row">
+    <button id="media-btn" class="icon-btn">📎</button>
+
+    <input
+      id="message-input"
+      placeholder="Type a message"
+      disabled
+    />
+
+    <button id="send-btn" class="send-btn">➤</button>
+  </div>
+
+  <input
+    type="file"
+    id="media-input"
+    accept="image/*,video/*"
+    hidden
+  />
+</footer>
+
 
 </main>
 
