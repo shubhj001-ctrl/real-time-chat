@@ -320,7 +320,8 @@ input.addEventListener("input", () => {
         type: selectedMedia.type,
         data: reader.result
       };
-      socket.emit("sendMessage", msg);
+   socket.emit("sendMessage", msg);
+
     };
     reader.readAsDataURL(selectedMedia);
   } else {
@@ -367,18 +368,16 @@ input.addEventListener("input", () => {
 });
 
 
- function renderMessage(msg) {
+function renderMessage(msg) {
   const div = document.createElement("div");
   div.className = "message" + (msg.from === currentUser ? " me" : "");
   div.dataset.id = msg.id;
 
-  // Reply trigger
   div.oncontextmenu = (e) => {
     e.preventDefault();
     startReply(msg);
   };
 
-  // Reply preview inside message
   if (msg.replyTo) {
     const reply = document.createElement("div");
     reply.className = "reply-inside";
@@ -387,7 +386,6 @@ input.addEventListener("input", () => {
     div.appendChild(reply);
   }
 
-  // Media
   if (msg.media) {
     if (msg.media.type.startsWith("image/")) {
       const imgWrapper = document.createElement("div");
@@ -408,20 +406,19 @@ input.addEventListener("input", () => {
     }
   }
 
-  // Text
   if (msg.text) {
     const text = document.createElement("div");
     text.textContent = msg.text;
     div.appendChild(text);
   }
 
-  // Timestamp
+  const time = document.createElement("div");
+  time.className = "timestamp";
   const ts = msg.timestamp || msg.createdAt || msg.id.replace("msg_", "");
-time.textContent = new Date(Number(ts)).toLocaleTimeString([], {
-  hour: "2-digit",
-  minute: "2-digit"
-});
-
+  time.textContent = new Date(Number(ts)).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
   div.appendChild(time);
 
   chatBox.appendChild(div);
