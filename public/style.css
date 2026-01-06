@@ -617,6 +617,16 @@ body {
 .message.me .timestamp {
   text-align: right;
 }
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 /* =========================
    CHAT INPUT – FINAL (LOCKED)
    ========================= */
