@@ -224,13 +224,19 @@ mediaBtn.onclick = () => mediaInput.click();
 
   /* ========= CHAT ========= */
 function showEmptyChat() {
-  chatTitle.textContent = "Select a chat"; // desktop only
+  chatTitle.textContent = "Select a chat";
   emptyChat.classList.remove("hidden");
+  emptyChat.style.display = "flex";
+
   chatBox.classList.add("hidden");
   chatFooter.classList.add("hidden");
 }
 
+
  function openChat(user) {
+  emptyChat.classList.add("hidden");
+emptyChat.style.display = "none"; // 🔥 THIS FIXES IT
+
   currentChat = user;
   localStorage.setItem("veyon_last_chat", user);
 
