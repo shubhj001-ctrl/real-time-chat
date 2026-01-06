@@ -731,6 +731,6 @@ body {
    ========================= */
 @media (min-width: 769px) {
   body {
-    font-size: 18px; /* default is ~14px */
+    font-size: 25px; /* default is ~14px */
   }
 }
