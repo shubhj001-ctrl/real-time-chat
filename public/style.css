@@ -740,22 +740,22 @@ body {
 
   /* Message text */
   .message {
-    font-size: 16px; /* was 14px */
+    font-size: 18px; /* was 14px */
   }
 
   /* Reply preview inside message */
   .reply-inside {
-    font-size: 14px; /* was 12px */
+    font-size: 16px; /* was 12px */
   }
 
   /* Input field text */
   #message-input {
-    font-size: 18px;
+    font-size: 20px;
   }
 
   /* Sidebar user names (already affected, but locking it) */
   .user-card {
-    font-size: 16px;
+    font-size: 20px;
   }
 
   /* Chat header name */
