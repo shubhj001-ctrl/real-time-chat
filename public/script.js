@@ -3,9 +3,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const socket = io();
 
   /* ========= ELEMENTS ========= */
-  const mediaPreview = document.getElementById("media-preview");
-const mediaThumb = mediaPreview.querySelector(".media-thumb");
-const removeMediaBtn = document.getElementById("remove-media");
   const loadingScreen = document.getElementById("loading-screen");
   const loginScreen = document.getElementById("login-screen");
   const app = document.getElementById("app");
@@ -41,6 +38,32 @@ const removeMediaBtn = document.getElementById("remove-media");
   let unreadCounts = JSON.parse(localStorage.getItem("veyon_unread") || "{}");
   let typingTimeout = null;
   let selectedMedia = null;
+
+  const imageOverlay = document.getElementById("image-preview-overlay");
+const imageOverlayImg = document.getElementById("image-preview-img");
+const imageOverlayClose = document.getElementById("image-preview-close");
+
+function openImagePreview(src) {
+  imageOverlayImg.src = src;
+  imageOverlay.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+}
+
+function closeImagePreview() {
+  imageOverlay.classList.add("hidden");
+  imageOverlayImg.src = "";
+  document.body.style.overflow = "";
+}
+
+imageOverlayClose.onclick = closeImagePreview;
+imageOverlay.onclick = (e) => {
+  if (e.target === imageOverlay) closeImagePreview();
+};
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeImagePreview();
+});
+
 
   /* ========= LOADER ========= */
   const brand = "Veyon";
@@ -140,11 +163,6 @@ const mediaBtn = document.getElementById("media-btn");
 const mediaInput = document.getElementById("media-input");
 
 mediaBtn.onclick = () => mediaInput.click();
-mediaInput.addEventListener("change", () => {
-  const file = mediaInput.files[0];
-  if (!file) return;
-  selectedMedia = file;
-});
 
   /* ========= LOGIN ========= */
   loginBtn.onclick = () => {
@@ -234,9 +252,8 @@ function showEmptyChat() {
 
   socket.emit("loadMessages", { withUser: user }, msgs => {
     msgs.forEach(renderMessage);
-    scrollifnearBottom();{
+    scrollifnearBottom();
     chatBox.scrollTop = chatBox.scrollHeight;
-    }
   });
 
   setTimeout(() => {
@@ -245,6 +262,7 @@ function showEmptyChat() {
   }, 100);
 
 }
+
 
   sendBtn.onclick = sendMessage;
   input.addEventListener("keydown", (e) => {
@@ -271,15 +289,11 @@ input.addEventListener("input", () => {
   }, 900);
 });
 
-
-
-function sendMessage() {
+ function sendMessage() {
   if (!currentChat) return;
   if (!input.value.trim() && !selectedMedia) return;
 
-  const mediaFile = selectedMedia; // 🔒 LOCK reference
-
-  const msgBase = {
+  const msg = {
     id: "msg_" + Date.now(),
     from: currentUser,
     to: currentChat,
@@ -293,55 +307,46 @@ function sendMessage() {
       : null
   };
 
-  // MEDIA MESSAGE
-  if (mediaFile) {
+  if (selectedMedia) {
     const reader = new FileReader();
-
     reader.onload = () => {
-      const msg = {
-        ...msgBase,
-        media: {
-          name: mediaFile.name,
-          type: mediaFile.type,
-          data: reader.result
-        }
+      msg.media = {
+        name: selectedMedia.name,
+        type: selectedMedia.type,
+        data: reader.result
       };
-
       socket.emit("sendMessage", msg);
-      renderMessage(msg); // optimistic render
     };
-
-    reader.readAsDataURL(mediaFile);
+    reader.readAsDataURL(selectedMedia);
+  } else {
+    socket.emit("sendMessage", msg);
   }
 
-  // TEXT ONLY
-  else {
-    socket.emit("sendMessage", msgBase);
-    renderMessage(msgBase);
-  }
-
-  // UI RESET (SAFE NOW)
   input.value = "";
   mediaInput.value = "";
   selectedMedia = null;
-  mediaPreview.classList.add("hidden");
   replyTarget = null;
   replyPreview.classList.add("hidden");
 
-  input.focus();
+  input.focus(); // keep keyboard open
 }
 
 
- socket.on("message", msg => {
-  // Ignore my own message (already rendered optimistically)
-  if (msg.from === currentUser) return;
 
-  if (
-    (msg.from === currentChat && msg.to === currentUser)
-  ) {
-    renderMessage(msg);
-  }
-});
+  socket.on("message", msg => {
+    if (msg.to === currentUser && msg.from !== currentChat) {
+      unreadCounts[msg.from] = (unreadCounts[msg.from] || 0) + 1;
+      localStorage.setItem("veyon_unread", JSON.stringify(unreadCounts));
+      renderUsers();
+    }
+
+    if (
+      (msg.from === currentChat && msg.to === currentUser) ||
+      (msg.from === currentUser && msg.to === currentChat)
+    ) {
+      renderMessage(msg);
+    }
+  });
 
   socket.on("media", msg => {
   if (
@@ -360,31 +365,42 @@ function sendMessage() {
  function renderMessage(msg) {
   const div = document.createElement("div");
   div.className = "message" + (msg.from === currentUser ? " me" : "");
+  div.dataset.id = msg.id;
 
-  // REPLY
+  // RIGHT CLICK / LONG PRESS TO REPLY
+  div.oncontextmenu = (e) => {
+    e.preventDefault();
+    startReply(msg);
+  };
+
+  // REPLY INSIDE MESSAGE
   if (msg.replyTo) {
     const reply = document.createElement("div");
     reply.className = "reply-inside";
     reply.textContent = msg.replyTo.text;
+
+    reply.onclick = () => jumpToMessage(msg.replyTo.id);
+
     div.appendChild(reply);
   }
 
   // MEDIA
   if (msg.media) {
-    if (msg.media.type.startsWith("image")) {
+    if (msg.media.type.startsWith("image/")) {
+      const imgWrapper = document.createElement("div");
+      imgWrapper.className = "image-thumb-wrapper";
+
       const img = document.createElement("img");
       img.src = msg.media.data;
-      img.style.maxWidth = "240px";
-      img.style.borderRadius = "12px";
-      div.appendChild(img);
-    }
+      img.onclick = () => openImagePreview(msg.media.data);
 
-    if (msg.media.type.startsWith("video")) {
+      imgWrapper.appendChild(img);
+      div.appendChild(imgWrapper);
+    } else {
       const video = document.createElement("video");
       video.src = msg.media.data;
       video.controls = true;
-      video.style.maxWidth = "260px";
-      video.style.borderRadius = "12px";
+      video.style.maxWidth = "240px";
       div.appendChild(video);
     }
   }
@@ -399,10 +415,19 @@ function sendMessage() {
   chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
+
   cancelReplyBtn.onclick = () => {
     replyTarget = null;
     replyPreview.classList.add("hidden");
   };
+
+  function startReply(msg) {
+  replyTarget = msg;
+  replyUser.textContent = msg.from;
+  replyText.textContent = msg.text || "Media message";
+  replyPreview.classList.remove("hidden");
+  input.focus();
+}
 
 
 function jumpToMessage(id) {
@@ -436,34 +461,23 @@ mediaInput.addEventListener("change", () => {
   const isImage = file.type.startsWith("image/");
   const isVideo = file.type.startsWith("video/");
 
-  // size checks already done by you earlier
+  if (!isImage && !isVideo) {
+    alert("Only images and videos allowed");
+    return;
+  }
+
+  if (isImage && file.size > 8 * 1024 * 1024) {
+    alert("Image must be under 8MB");
+    mediaInput.value = "";
+    return;
+  }
+
+  if (isVideo && file.size > 50 * 1024 * 1024) {
+    alert("Video must be under 50MB");
+    mediaInput.value = "";
+    return;
+  }
 
   selectedMedia = file;
-  mediaThumb.innerHTML = "";
-
-  if (isImage) {
-    const img = document.createElement("img");
-    img.src = URL.createObjectURL(file);
-    mediaThumb.appendChild(img);
-  }
-
-  if (isVideo) {
-    const video = document.createElement("video");
-    video.src = URL.createObjectURL(file);
-    video.muted = true;
-    video.playsInline = true;
-    mediaThumb.appendChild(video);
-  }
-
-  mediaPreview.classList.remove("hidden");
 });
-removeMediaBtn.onclick = () => {
-  selectedMedia = null;
-  mediaInput.value = "";
-  mediaThumb.innerHTML = "";
-  mediaPreview.classList.add("hidden");
-  replyTarget = null;
-  replyPreview.classList.add("hidden");
-};
-
 });
