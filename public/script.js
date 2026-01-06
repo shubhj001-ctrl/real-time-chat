@@ -298,54 +298,52 @@ input.addEventListener("input", () => {
   }, 900);
 });
 
- function sendMessage() {
+ async function sendMessage() {
   if (!currentChat) return;
   if (!input.value.trim() && !selectedMedia) return;
+
+  let mediaPayload = null;
+
+  if (selectedMedia) {
+    const formData = new FormData();
+    formData.append("file", selectedMedia);
+
+    const res = await fetch("/upload", {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json();
+    if (!data.ok) return alert("Upload failed");
+
+    mediaPayload = {
+      url: data.url,
+      type: data.type
+    };
+  }
 
   const msg = {
     id: "msg_" + Date.now(),
     from: currentUser,
     to: currentChat,
     text: input.value.trim() || null,
-    replyTo: replyTarget
-      ? {
-          id: replyTarget.id,
-          from: replyTarget.from,
-          text: replyTarget.text
-        }
-      : null
+    media: mediaPayload,
+    replyTo: replyTarget,
+    timestamp: Date.now()
   };
 
-  if (selectedMedia) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      msg.media = {
-        name: selectedMedia.name,
-        type: selectedMedia.type,
-        data: reader.result
-      };
+  socket.emit("sendMessage", msg);
+  renderMessage(msg); // instant UI
 
-      socket.emit("sendMessage", msg);
-      renderMessage(msg); // 🔥 THIS WAS MISSING
-    };
-    reader.readAsDataURL(selectedMedia);
-  } else {
-    socket.emit("sendMessage", msg);
-    renderMessage(msg); // 🔥 THIS WAS MISSING
-  }
-
-  // Reset UI
+  // reset UI
   input.value = "";
-  mediaInput.value = "";
   selectedMedia = null;
+  mediaInput.value = "";
   mediaPreview.classList.add("hidden");
   mediaPreviewImg.src = "";
-
-  replyTarget = null;
   replyPreview.classList.add("hidden");
-
-  input.focus();
 }
+
   socket.on("message", msg => {
     if (msg.to === currentUser && msg.from !== currentChat) {
       unreadCounts[msg.from] = (unreadCounts[msg.from] || 0) + 1;
@@ -380,24 +378,21 @@ function renderMessage(msg) {
   }
 
   if (msg.media) {
-    if (msg.media.type.startsWith("image/")) {
-      const imgWrapper = document.createElement("div");
-      imgWrapper.className = "image-thumb-wrapper";
-
-      const img = document.createElement("img");
-      img.src = msg.media.data;
-      img.onclick = () => openImagePreview(msg.media.data);
-
-      imgWrapper.appendChild(img);
-      div.appendChild(imgWrapper);
-    } else {
-      const video = document.createElement("video");
-      video.src = msg.media.data;
-      video.controls = true;
-      video.style.maxWidth = "240px";
-      div.appendChild(video);
-    }
+  if (msg.media.type.startsWith("image/")) {
+    const img = document.createElement("img");
+    img.src = msg.media.url;
+    img.style.maxWidth = "220px";
+    img.style.borderRadius = "10px";
+    img.onclick = () => openImagePreview(msg.media.url);
+    div.appendChild(img);
+  } else if (msg.media.type.startsWith("video/")) {
+    const video = document.createElement("video");
+    video.src = msg.media.url;
+    video.controls = true;
+    video.style.maxWidth = "240px";
+    div.appendChild(video);
   }
+}
 
   if (msg.text) {
     const text = document.createElement("div");
