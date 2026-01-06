@@ -3,7 +3,9 @@ const http = require("http");
 const { Server } = require("socket.io");
 const userSockets = new Map();
 const USERS = require("./defaultUsers");
-
+const path = require("path");
+const multer = require("multer");
+const { v4: uuidv4 } = require("uuid");
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -11,6 +13,22 @@ const io = new Server(server, {
 });
 
 app.use(express.static("public"));
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+const storage = multer.diskStorage({
+  destination: "uploads/",
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, uuidv4() + ext);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB
+});
+
 
 let onlineUsers = new Set();
 let messages = {};
@@ -21,6 +39,17 @@ function chatKey(a, b) {
 
 io.on("connection", socket => {
   console.log("🔌 New socket connected:", socket.id);
+
+  app.post("/upload", upload.single("file"), (req, res) => {
+  if (!req.file) return res.status(400).json({ ok: false });
+
+  res.json({
+    ok: true,
+    url: `/uploads/${req.file.filename}`,
+    type: req.file.mimetype
+  });
+});
+
 
   // LOGIN
   socket.on("login", (data, cb) => {
