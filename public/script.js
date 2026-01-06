@@ -300,21 +300,33 @@ input.addEventListener("input", () => {
 
  async function sendMessage() {
   if (!currentChat) return;
+
+  // 🚨 VERY IMPORTANT
   if (!input.value.trim() && !selectedMedia) return;
 
   let mediaPayload = null;
 
+  // 1️⃣ Upload media first
   if (selectedMedia) {
     const formData = new FormData();
     formData.append("file", selectedMedia);
 
-    const res = await fetch("/upload", {
-      method: "POST",
-      body: formData
-    });
+    let res;
+    try {
+      res = await fetch("/upload", {
+        method: "POST",
+        body: formData
+      });
+    } catch (err) {
+      alert("Upload failed");
+      return;
+    }
 
     const data = await res.json();
-    if (!data.ok) return alert("Upload failed");
+    if (!data.ok) {
+      alert("Upload error");
+      return;
+    }
 
     mediaPayload = {
       url: data.url,
@@ -322,6 +334,7 @@ input.addEventListener("input", () => {
     };
   }
 
+  // 2️⃣ Build message
   const msg = {
     id: "msg_" + Date.now(),
     from: currentUser,
@@ -332,32 +345,23 @@ input.addEventListener("input", () => {
     timestamp: Date.now()
   };
 
+  // 3️⃣ Emit + instant render
   socket.emit("sendMessage", msg);
-  renderMessage(msg); // instant UI
+  renderMessage(msg);
 
-  // reset UI
+  // 4️⃣ Reset UI (NO ERRORS)
   input.value = "";
   selectedMedia = null;
   mediaInput.value = "";
+
   mediaPreview.classList.add("hidden");
   mediaPreviewImg.src = "";
+
+  replyTarget = null;
   replyPreview.classList.add("hidden");
+
+  input.focus();
 }
-
-  socket.on("message", msg => {
-    if (msg.to === currentUser && msg.from !== currentChat) {
-      unreadCounts[msg.from] = (unreadCounts[msg.from] || 0) + 1;
-      localStorage.setItem("veyon_unread", JSON.stringify(unreadCounts));
-      renderUsers();
-    }
-
-    if (
-      (msg.from === currentChat && msg.to === currentUser) ||
-      (msg.from === currentUser && msg.to === currentChat)
-    ) {
-      renderMessage(msg);
-    }
-  });
 
 function renderMessage(msg) {
   const div = document.createElement("div");
@@ -449,44 +453,24 @@ mediaInput.addEventListener("change", () => {
   const file = mediaInput.files[0];
   if (!file) return;
 
-  const isImage = file.type.startsWith("image/");
-  const isVideo = file.type.startsWith("video/");
-
-  if (!isImage && !isVideo) {
+  if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
     alert("Only images and videos allowed");
-    return;
-  }
-
-  if (isImage && file.size > 8 * 1024 * 1024) {
-    alert("Image must be under 8MB");
-    return;
-  }
-
-  if (isVideo && file.size > 50 * 1024 * 1024) {
-    alert("Video must be under 50MB");
     return;
   }
 
   selectedMedia = file;
 
-  // Preview
-  if (isImage) {
-    // Preview
-const reader = new FileReader();
-reader.onload = () => {
-  if (isImage) {
-    mediaPreviewImg.src = reader.result;
-  } else {
-    mediaPreviewImg.src = "";
+  // Preview (image only)
+  if (file.type.startsWith("image/")) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      mediaPreviewImg.src = reader.result;
+      mediaPreview.classList.remove("hidden");
+    };
+    reader.readAsDataURL(file);
   }
-  mediaPreview.classList.remove("hidden");
-};
-reader.readAsDataURL(file);
-
-  }
-  
-
 });
+
 removeMediaBtn.onclick = () => {
   selectedMedia = null;
   mediaInput.value = "";
