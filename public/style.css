@@ -704,7 +704,7 @@ body {
 .reply-inside {
   display: inline-block;            /* 🔥 KEY FIX */
   max-width: 100%;
-  font-size: 12px;
+  font-size: 14px;
   opacity: 0.75;
 
   border-left: 3px solid #caa960;
@@ -734,5 +734,33 @@ body {
   text-align: right;
 }
 /* =========================
-   DESKTOP FONT SCALE (+2px)
+   DESKTOP CHAT FONT SCALE (+2px)
    ========================= */
+@media (min-width: 769px) {
+
+  /* Message text */
+  .message {
+    font-size: 16px; /* was 14px */
+  }
+
+  /* Reply preview inside message */
+  .reply-inside {
+    font-size: 14px; /* was 12px */
+  }
+
+  /* Input field text */
+  #message-input {
+    font-size: 16px;
+  }
+
+  /* Sidebar user names (already affected, but locking it) */
+  .user-card {
+    font-size: 16px;
+  }
+
+  /* Chat header name */
+  .chat-header {
+    font-size: 18px;
+  }
+}
+
