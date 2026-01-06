@@ -320,25 +320,26 @@ input.addEventListener("input", () => {
         type: selectedMedia.type,
         data: reader.result
       };
-   socket.emit("sendMessage", msg);
 
+      socket.emit("sendMessage", msg);
     };
     reader.readAsDataURL(selectedMedia);
   } else {
     socket.emit("sendMessage", msg);
   }
 
+  // Reset UI
   input.value = "";
   mediaInput.value = "";
   selectedMedia = null;
+  mediaPreview.classList.add("hidden");
+  mediaPreviewImg.src = "";
+
   replyTarget = null;
   replyPreview.classList.add("hidden");
 
-  input.focus(); // keep keyboard open
+  input.focus();
 }
-
-
-
   socket.on("message", msg => {
     if (msg.to === currentUser && msg.from !== currentChat) {
       unreadCounts[msg.from] = (unreadCounts[msg.from] || 0) + 1;
@@ -471,16 +472,31 @@ mediaInput.addEventListener("change", () => {
 
   if (isImage && file.size > 8 * 1024 * 1024) {
     alert("Image must be under 8MB");
-    mediaInput.value = "";
     return;
   }
 
   if (isVideo && file.size > 50 * 1024 * 1024) {
     alert("Video must be under 50MB");
-    mediaInput.value = "";
     return;
   }
 
   selectedMedia = file;
+
+  // Preview
+  if (isImage) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      mediaPreviewImg.src = reader.result;
+      mediaPreview.classList.remove("hidden");
+    };
+    reader.readAsDataURL(file);
+  }
+  removeMediaBtn.onclick = () => {
+  selectedMedia = null;
+  mediaInput.value = "";
+  mediaPreview.classList.add("hidden");
+  mediaPreviewImg.src = "";
+};
+
 });
 });
