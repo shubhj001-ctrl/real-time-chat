@@ -1,4 +1,3 @@
-const db = require("./db");
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -7,6 +6,7 @@ const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
 
 const USERS = require("./defaultUsers");
+const { saveMessage, loadMessages } = require("./db");
 
 const app = express();
 const server = http.createServer(app);
@@ -52,7 +52,6 @@ app.post("/upload", upload.single("file"), (req, res) => {
 
 const userSockets = new Map(); // username → socket
 const onlineUsers = new Set();
-const messages = {};
 
 const chatKey = (a, b) => [a, b].sort().join("|");
 
@@ -63,11 +62,9 @@ const chatKey = (a, b) => [a, b].sort().join("|");
 io.on("connection", socket => {
   console.log("🔌 Connected:", socket.id);
 
+  /* ---------- LOGIN ---------- */
   socket.on("login", (data, cb) => {
-    if (
-      !data?.username ||
-      USERS[data.username] !== data.password
-    ) {
+    if (!data?.username || USERS[data.username] !== data.password) {
       cb?.({ ok: false });
       return;
     }
@@ -84,6 +81,7 @@ io.on("connection", socket => {
     io.emit("online", [...onlineUsers]);
   });
 
+  /* ---------- RECONNECT ---------- */
   socket.on("reconnectUser", username => {
     socket.username = username;
     userSockets.set(username, socket);
@@ -91,61 +89,63 @@ io.on("connection", socket => {
     io.emit("online", [...onlineUsers]);
   });
 
+  /* ---------- TYPING ---------- */
   socket.on("typing", ({ to }) => {
     if (!socket.username) return;
-    const target = userSockets.get(to);
-    target?.emit("typing", { from: socket.username, to });
+    userSockets.get(to)?.emit("typing", {
+      from: socket.username,
+      to
+    });
   });
 
   socket.on("stopTyping", ({ to }) => {
     if (!socket.username) return;
-    const target = userSockets.get(to);
-    target?.emit("stopTyping", { from: socket.username, to });
+    userSockets.get(to)?.emit("stopTyping", {
+      from: socket.username,
+      to
+    });
   });
 
-socket.on("loadMessages", ({ withUser }, cb) => {
-  if (!socket.username) return cb([]);
+  /* ---------- LOAD MESSAGES ---------- */
+  socket.on("loadMessages", async ({ withUser }, cb) => {
+    if (!socket.username) return cb([]);
 
-  const rows = db.prepare(`
-    SELECT * FROM messages
-    WHERE (sender = ? AND receiver = ?)
-       OR (sender = ? AND receiver = ?)
-    ORDER BY timestamp ASC
-  `).all(socket.username, withUser, withUser, socket.username);
+    const key = chatKey(socket.username, withUser);
 
-  cb(rows);
-});
+    try {
+      const msgs = await loadMessages(key);
+      cb(msgs);
+    } catch (err) {
+      console.error("❌ Load messages error", err);
+      cb([]);
+    }
+  });
 
- socket.on("sendMessage", msg => {
-  if (!msg?.from || !msg?.to) return;
+  /* ---------- SEND MESSAGE ---------- */
+  socket.on("sendMessage", async msg => {
+    if (!msg?.from || !msg?.to) return;
 
-  // 🔒 Hard-bind identity
-  if (!socket.username) {
-    socket.username = msg.from;
-    userSockets.set(msg.from, socket);
-    onlineUsers.add(msg.from);
-  }
+    // bind identity safely
+    if (!socket.username) {
+      socket.username = msg.from;
+      userSockets.set(msg.from, socket);
+      onlineUsers.add(msg.from);
+    }
 
-  db.prepare(`
-    INSERT INTO messages
-    (id, sender, receiver, text, mediaUrl, mediaType, timestamp)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    msg.id,
-    msg.from,
-    msg.to,
-    msg.text || null,
-    msg.media?.url || null,
-    msg.media?.type || null,
-    Date.now()
-  );
+    const key = chatKey(msg.from, msg.to);
+    msg.createdAt = Date.now();
 
-  userSockets.get(msg.to)?.emit("message", msg);
-  userSockets.get(msg.from)?.emit("message", msg);
-});
+    try {
+      await saveMessage(msg, key);
 
+      userSockets.get(msg.to)?.emit("message", msg);
+      userSockets.get(msg.from)?.emit("message", msg);
+    } catch (err) {
+      console.error("❌ Message save failed", err);
+    }
+  });
 
-
+  /* ---------- DISCONNECT ---------- */
   socket.on("disconnect", () => {
     if (socket.username) {
       userSockets.delete(socket.username);
