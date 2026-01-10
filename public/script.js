@@ -542,7 +542,7 @@ function addReaction(msg, emoji) {
     emojiBtn = document.createElement("button");
     emojiBtn.className = "reaction-btn";
     emojiBtn.dataset.emoji = emoji;
-    emojiBtn.data-count = 1;
+    emojiBtn.dataset.count = 1;
     emojiBtn.textContent = emoji;
     reactionsDiv.appendChild(emojiBtn);
   }
