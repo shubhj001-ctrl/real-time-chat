@@ -1,70 +1,59 @@
-const sqlite3 = require("sqlite3").verbose();
+const mongoose = require("mongoose");
 
-const db = new sqlite3.Database("./chat.db", err => {
-  if (err) {
-    console.error("❌ Failed to connect DB", err);
-  } else {
-    console.log("✅ SQLite connected");
+const MONGO_URI = process.env.MONGO_URI;
+
+if (!MONGO_URI) {
+  throw new Error("❌ MONGO_URI missing in environment variables");
+}
+
+mongoose.connect(MONGO_URI, {
+  dbName: "veyon",
+})
+.then(() => console.log("✅ MongoDB connected"))
+.catch(err => {
+  console.error("❌ MongoDB connection failed", err);
+  process.exit(1);
+});
+
+const messageSchema = new mongoose.Schema({
+  chatKey: String,
+  from: String,
+  to: String,
+  text: String,
+  media: {
+    url: String,
+    type: String
+  },
+  replyTo: Object,
+  createdAt: {
+    type: Number,
+    default: Date.now
   }
 });
 
-/* =========================
-   INIT TABLE
-========================= */
-db.serialize(() => {
-  db.run(`
-    CREATE TABLE IF NOT EXISTS messages (
-      id TEXT PRIMARY KEY,
-      chatKey TEXT,
-      fromUser TEXT,
-      toUser TEXT,
-      text TEXT,
-      mediaUrl TEXT,
-      mediaType TEXT,
-      createdAt INTEGER
-    )
-  `);
-});
+const Message = mongoose.model("Message", messageSchema);
 
 /* =========================
    HELPERS
 ========================= */
 
-function saveMessage(msg, chatKey) {
-  return new Promise((resolve, reject) => {
-    db.run(
-      `
-      INSERT INTO messages
-      (id, chatKey, fromUser, toUser, text, mediaUrl, mediaType, createdAt)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
-        msg.id,
-        chatKey,
-        msg.from,
-        msg.to,
-        msg.text || null,
-        msg.media?.url || null,
-        msg.media?.type || null,
-        msg.createdAt || Date.now()
-      ],
-      err => (err ? reject(err) : resolve())
-    );
+async function saveMessage(msg, chatKey) {
+  await Message.create({
+    chatKey,
+    from: msg.from,
+    to: msg.to,
+    text: msg.text || null,
+    media: msg.media || null,
+    replyTo: msg.replyTo || null,
+    createdAt: msg.createdAt || Date.now()
   });
 }
 
-function loadMessages(chatKey) {
-  return new Promise((resolve, reject) => {
-    db.all(
-      `SELECT * FROM messages WHERE chatKey = ? ORDER BY createdAt`,
-      [chatKey],
-      (err, rows) => (err ? reject(err) : resolve(rows))
-    );
-  });
+async function loadMessages(chatKey) {
+  return Message.find({ chatKey }).sort({ createdAt: 1 }).lean();
 }
 
 module.exports = {
-  db,
   saveMessage,
   loadMessages
 };
