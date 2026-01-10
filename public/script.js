@@ -133,6 +133,22 @@ socket.on("stopTyping", data => {
   }
 });
 
+socket.on("message", msg => {
+  // Only render if it belongs to the open chat
+  if (
+    (msg.from === currentChat && msg.to === currentUser) ||
+    (msg.from === currentUser && msg.to === currentChat)
+  ) {
+    renderMessage(msg);
+  } else {
+    // increment unread count
+    unreadCounts[msg.from] = (unreadCounts[msg.from] || 0) + 1;
+    localStorage.setItem("veyon_unread", JSON.stringify(unreadCounts));
+    renderUsers();
+  }
+});
+
+
 const backBtn = document.getElementById("back-btn");
 if (backBtn) {
   backBtn.onclick = () => {
@@ -301,12 +317,10 @@ input.addEventListener("input", () => {
  async function sendMessage() {
   if (!currentChat) return;
 
-  // 🚨 VERY IMPORTANT
   if (!input.value.trim() && !selectedMedia) return;
 
   let mediaPayload = null;
 
-  // 1️⃣ Upload media first
   if (selectedMedia) {
     const formData = new FormData();
     formData.append("file", selectedMedia);
@@ -334,7 +348,6 @@ input.addEventListener("input", () => {
     };
   }
 
-  // 2️⃣ Build message
   const msg = {
     id: "msg_" + Date.now(),
     from: currentUser,
@@ -345,11 +358,10 @@ input.addEventListener("input", () => {
     timestamp: Date.now()
   };
 
-  // 3️⃣ Emit + instant render
+  // ✅ THIS LINE WAS MISSING
   socket.emit("sendMessage", msg);
-  renderMessage(msg);
 
-  // 4️⃣ Reset UI (NO ERRORS)
+  // reset UI
   input.value = "";
   selectedMedia = null;
   mediaInput.value = "";
@@ -362,6 +374,7 @@ input.addEventListener("input", () => {
 
   input.focus();
 }
+
 
 function renderMessage(msg) {
   const div = document.createElement("div");
