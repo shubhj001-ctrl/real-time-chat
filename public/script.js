@@ -337,9 +337,12 @@ input.addEventListener("input", () => {
 });
 
  async function sendMessage() {
+  console.log("🚀 sendMessage triggered");
+
   if (!currentChat) return;
 
-  if (!input.value.trim() && !selectedMedia) return;
+  const text = input.value.trim();
+  if (!text && !selectedMedia) return;
 
   let mediaPayload = null;
 
@@ -347,22 +350,13 @@ input.addEventListener("input", () => {
     const formData = new FormData();
     formData.append("file", selectedMedia);
 
-    let res;
-    try {
-      res = await fetch("/upload", {
-        method: "POST",
-        body: formData
-      });
-    } catch (err) {
-      alert("Upload failed");
-      return;
-    }
+    const res = await fetch("/upload", {
+      method: "POST",
+      body: formData
+    });
 
     const data = await res.json();
-    if (!data.ok) {
-      alert("Upload error");
-      return;
-    }
+    if (!data.ok) return;
 
     mediaPayload = {
       url: data.url,
@@ -374,17 +368,15 @@ input.addEventListener("input", () => {
     id: "msg_" + Date.now(),
     from: currentUser,
     to: currentChat,
-    text: input.value.trim() || null,
+    text: text || null,
     media: mediaPayload,
     replyTo: replyTarget,
     timestamp: Date.now()
   };
 
-  // ✅ THIS LINE WAS MISSING
   socket.emit("sendMessage", msg);
-renderMessage(msg);
+  renderMessage(msg);
 
-  // reset UI
   input.value = "";
   selectedMedia = null;
   mediaInput.value = "";
@@ -397,7 +389,6 @@ renderMessage(msg);
 
   input.focus();
 }
-
 
 function renderMessage(msg) {
   const div = document.createElement("div");
