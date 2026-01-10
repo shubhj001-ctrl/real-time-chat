@@ -115,7 +115,9 @@ socket.on("typing", data => {
 
     // ensure it stays at bottom of messages
     chatBox.appendChild(typingBubble);
-    chatBox.scrollTop = chatBox.scrollHeight + 200;
+    requestAnimationFrame(() => {
+  chatBox.scrollTop = chatBox.scrollHeight;
+});
   }
 });
 socket.on("connect", () => {
@@ -135,20 +137,20 @@ socket.on("stopTyping", data => {
 });
 
 socket.on("message", msg => {
-  // Only render if it belongs to the open chat
+  // 🔥 Ignore echo of own message (already rendered)
+  if (msg.from === currentUser) return;
+
   if (
-    (msg.from === currentChat && msg.to === currentUser) ||
-    (msg.from === currentUser && msg.to === currentChat)
+    msg.from === currentChat &&
+    msg.to === currentUser
   ) {
     renderMessage(msg);
   } else {
-    // increment unread count
     unreadCounts[msg.from] = (unreadCounts[msg.from] || 0) + 1;
     localStorage.setItem("veyon_unread", JSON.stringify(unreadCounts));
     renderUsers();
   }
 });
-
 
 const backBtn = document.getElementById("back-btn");
 if (backBtn) {
@@ -161,7 +163,7 @@ backBtn.onclick = () => {
   sidebar.style.display = "flex";
 
   currentChat = null;
-};
+};  
 }
 
 if (window.visualViewport) {
@@ -178,7 +180,9 @@ if (window.visualViewport) {
     }
 
     // keep messages visible
-    chatBox.scrollTop = chatBox.scrollHeight + 200;
+    requestAnimationFrame(() => {
+  chatBox.scrollTop = chatBox.scrollHeight;
+});
   }
 
   viewport.addEventListener("resize", adjustForKeyboard);
@@ -294,7 +298,9 @@ document.getElementById("chat-avatar-letter").textContent =
 
 socket.emit("loadMessages", { withUser: user }, msgs => {
   msgs.forEach(renderMessage);
-  chatBox.scrollTop = chatBox.scrollHeight + 200;
+  requestAnimationFrame(() => {
+  chatBox.scrollTop = chatBox.scrollHeight;
+});
 });
 
 
@@ -376,6 +382,7 @@ input.addEventListener("input", () => {
 
   // ✅ THIS LINE WAS MISSING
   socket.emit("sendMessage", msg);
+renderMessage(msg);
 
   // reset UI
   input.value = "";
@@ -443,7 +450,9 @@ function renderMessage(msg) {
   div.appendChild(time);
 
   chatBox.appendChild(div);
-  chatBox.scrollTop = chatBox.scrollHeight + 200;
+  requestAnimationFrame(() => {
+  chatBox.scrollTop = chatBox.scrollHeight;
+});
 }
 
   cancelReplyBtn.onclick = () => {
