@@ -721,6 +721,18 @@ body {
   }
 
 }
+
+/* Mobile positioning for menus (centered, above input) */
+@media (max-width: 768px) {
+  .message-menu,
+  .reaction-picker {
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    top: auto !important;
+    bottom: 120px !important;
+    min-width: 160px;
+  }
+}
 .mobile-only {
   display: none;
 }
@@ -931,6 +943,15 @@ body {
    word-break: break-word;
   overflow-wrap: anywhere;
   white-space: normal;
+}
+
+/* Prevent native text selection on messages (avoid long-press selection on mobile) */
+.message {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .message.me {

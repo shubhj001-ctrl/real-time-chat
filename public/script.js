@@ -43,6 +43,8 @@ const removeMediaBtn = document.getElementById("remove-media");
   let unreadCounts = JSON.parse(localStorage.getItem("veyon_unread") || "{}");
   let typingTimeout = null;
   let selectedMedia = null;
+  // Reactions storage: msgId -> { user: emoji }
+  let reactionsMap = {};
 
   const imageOverlay = document.getElementById("image-preview-overlay");
 const imageOverlayImg = document.getElementById("image-preview-img");
@@ -258,8 +260,18 @@ socket.on("message", msg => {
     msg.from === currentChat &&
     msg.to === currentUser
   ) {
-    renderMessage(msg);
-    playReceiveSound();
+    // If typing indicator visible for this chat, hide it first then render
+    if (typingBubble.classList.contains('show') && msg.from === currentChat) {
+      typingBubble.classList.remove('show');
+      setTimeout(() => {
+        typingBubble.classList.add('hidden');
+        renderMessage(msg);
+        playReceiveSound();
+      }, 200);
+    } else {
+      renderMessage(msg);
+      playReceiveSound();
+    }
   } else {
     unreadCounts[msg.from] = (unreadCounts[msg.from] || 0) + 1;
     localStorage.setItem("veyon_unread", JSON.stringify(unreadCounts));
@@ -482,25 +494,49 @@ function showMessageMenu(e, messageDiv, msg, isMobile = false) {
   selectedMsg = msg;
 
   messageMenu.classList.remove("hidden");
-  
+
+  // Position with slight clamping to viewport
+  const pageW = window.innerWidth;
+  const pageH = window.innerHeight;
+  let left = e.clientX;
+  let top = e.clientY;
+
   if (isMobile) {
-    messageMenu.style.left = e.clientX + "px";
-    messageMenu.style.top = (e.clientY - 80) + "px";
+    // on mobile center above input area
+    left = pageW / 2;
+    top = pageH - 180;
   } else {
-    messageMenu.style.left = e.clientX + "px";
-    messageMenu.style.top = e.clientY + "px";
+    // clamp near edges
+    if (left + 180 > pageW) left = pageW - 180;
+    if (top + 80 > pageH) top = pageH - 120;
   }
+
+  messageMenu.style.left = left + "px";
+  messageMenu.style.top = top + "px";
 }
 
-// Menu item click handlers
+// Menu item click handlers (includes copy)
 document.querySelectorAll(".menu-item").forEach(item => {
-  item.addEventListener("click", (e) => {
+  item.addEventListener("click", async (e) => {
     const action = e.target.dataset.action;
-    
+
     if (action === "react") {
       showReactionPicker(e);
     } else if (action === "reply") {
       startReply(selectedMsg);
+      messageMenu.classList.add("hidden");
+    } else if (action === "copy") {
+      try {
+        await navigator.clipboard.writeText(selectedMsg?.text || "");
+      } catch (err) {
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = selectedMsg?.text || "";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      }
       messageMenu.classList.add("hidden");
     }
   });
@@ -509,44 +545,76 @@ document.querySelectorAll(".menu-item").forEach(item => {
 function showReactionPicker(e) {
   const rect = selectedMessageDiv.getBoundingClientRect();
   reactionPicker.classList.remove("hidden");
-  reactionPicker.style.left = (rect.left + rect.width / 2 - 72) + "px";
-  reactionPicker.style.top = (rect.top - 60) + "px";
+  // center reaction picker above the message
+  let left = rect.left + rect.width / 2 - 72;
+  let top = rect.top - 60;
+
+  // clamp to viewport
+  if (left < 8) left = 8;
+  if (left + 160 > window.innerWidth) left = window.innerWidth - 168;
+  if (top < 60) top = rect.bottom + 8; // if not enough space above, show below
+
+  reactionPicker.style.left = left + "px";
+  reactionPicker.style.top = top + "px";
 }
 
+// Send reaction to server; server will broadcast to both users
 document.querySelectorAll(".reaction-emoji").forEach(btn => {
   btn.addEventListener("click", (e) => {
     const emoji = e.target.dataset.emoji;
-    addReaction(selectedMsg, emoji);
+    if (!selectedMsg) return;
+
+    const payload = {
+      msgId: selectedMsg.id,
+      emoji,
+      from: currentUser,
+      to: selectedMsg.from === currentUser ? selectedMsg.to : selectedMsg.from
+    };
+
+    socket.emit('react', payload);
     reactionPicker.classList.add("hidden");
     messageMenu.classList.add("hidden");
   });
 });
 
-function addReaction(msg, emoji) {
-  const msgEl = document.querySelector(`[data-id="${msg.id}"]`);
+// Local reaction state and DOM update helpers
+function applyReactionsToDOM(msgId) {
+  const map = reactionsMap[msgId] || {};
+  const counts = {};
+  Object.values(map).forEach(emoji => { counts[emoji] = (counts[emoji] || 0) + 1; });
+
+  const msgEl = document.querySelector(`[data-id="${msgId}"]`);
   if (!msgEl) return;
 
-  let reactionsDiv = msgEl.querySelector(".message-reactions");
+  let reactionsDiv = msgEl.querySelector('.message-reactions');
   if (!reactionsDiv) {
-    reactionsDiv = document.createElement("div");
-    reactionsDiv.className = "message-reactions";
+    reactionsDiv = document.createElement('div');
+    reactionsDiv.className = 'message-reactions';
     msgEl.appendChild(reactionsDiv);
   }
+  reactionsDiv.innerHTML = '';
 
-  let emojiBtn = reactionsDiv.querySelector(`[data-emoji="${emoji}"]`);
-  if (emojiBtn) {
-    const count = parseInt(emojiBtn.dataset.count || 1) + 1;
-    emojiBtn.dataset.count = count;
-    emojiBtn.textContent = emoji + (count > 1 ? " " + count : "");
-  } else {
-    emojiBtn = document.createElement("button");
-    emojiBtn.className = "reaction-btn";
-    emojiBtn.dataset.emoji = emoji;
-    emojiBtn.dataset.count = 1;
-    emojiBtn.textContent = emoji;
-    reactionsDiv.appendChild(emojiBtn);
-  }
+  Object.keys(counts).forEach(emoji => {
+    const btn = document.createElement('button');
+    btn.className = 'reaction-btn';
+    btn.dataset.emoji = emoji;
+    btn.textContent = emoji + (counts[emoji] > 1 ? ' ' + counts[emoji] : '');
+    reactionsDiv.appendChild(btn);
+  });
 }
+
+// When server notifies about a reaction, update local map and DOM
+socket.on('reaction', (payload) => {
+  const { msgId, emoji, from } = payload;
+  if (!reactionsMap[msgId]) reactionsMap[msgId] = {};
+  // toggle off if same emoji already set by user
+  if (reactionsMap[msgId][from] === emoji) {
+    delete reactionsMap[msgId][from];
+  } else {
+    reactionsMap[msgId][from] = emoji;
+  }
+  applyReactionsToDOM(msgId);
+});
 
 // Close menu when clicking outside
 document.addEventListener("click", (e) => {
@@ -621,16 +689,17 @@ function renderMessage(msg) {
     showMessageMenu(e, div, msg);
   };
 
-  // Long press for mobile
+  // Long press for mobile — show menu without selecting text
   let longPressTimer;
-  div.addEventListener("touchstart", () => {
+  div.addEventListener("touchstart", (ev) => {
+    ev.preventDefault();
+    const touch = ev.touches && ev.touches[0];
     longPressTimer = setTimeout(() => {
-      const touchEvent = event;
-      showMessageMenu({ clientX: touchEvent.touches[0].clientX, clientY: touchEvent.touches[0].clientY }, div, msg, true);
+      showMessageMenu({ clientX: touch.clientX, clientY: touch.clientY }, div, msg, true);
     }, 500);
-  });
+  }, { passive: false });
 
-  div.addEventListener("touchend", () => {
+  div.addEventListener("touchend", (ev) => {
     clearTimeout(longPressTimer);
   });
 
