@@ -48,6 +48,54 @@ const removeMediaBtn = document.getElementById("remove-media");
 const imageOverlayImg = document.getElementById("image-preview-img");
 const imageOverlayClose = document.getElementById("image-preview-close");
 
+/* ========= SOUND EFFECTS ========= */
+function createSoundContext() {
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  return audioContext;
+}
+
+let audioContext = null;
+
+function playSendSound() {
+  if (!audioContext) audioContext = createSoundContext();
+  
+  const now = audioContext.currentTime;
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  
+  osc.connect(gain);
+  gain.connect(audioContext.destination);
+  
+  osc.frequency.setValueAtTime(600, now);
+  osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+  
+  gain.gain.setValueAtTime(0.2, now);
+  gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+  
+  osc.start(now);
+  osc.stop(now + 0.1);
+}
+
+function playReceiveSound() {
+  if (!audioContext) audioContext = createSoundContext();
+  
+  const now = audioContext.currentTime;
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  
+  osc.connect(gain);
+  gain.connect(audioContext.destination);
+  
+  osc.frequency.setValueAtTime(1000, now);
+  osc.frequency.exponentialRampToValueAtTime(600, now + 0.15);
+  
+  gain.gain.setValueAtTime(0.15, now);
+  gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+  
+  osc.start(now);
+  osc.stop(now + 0.15);
+}
+
 function openImagePreview(src) {
   imageOverlayImg.src = src;
   imageOverlay.classList.remove("hidden");
@@ -211,10 +259,12 @@ socket.on("message", msg => {
     msg.to === currentUser
   ) {
     renderMessage(msg);
+    playReceiveSound();
   } else {
     unreadCounts[msg.from] = (unreadCounts[msg.from] || 0) + 1;
     localStorage.setItem("veyon_unread", JSON.stringify(unreadCounts));
     renderUsers();
+    playReceiveSound();
   }
 });
 
@@ -421,7 +471,90 @@ input.addEventListener("input", () => {
     });
   }, 900);
 });
+/* ========= MESSAGE CONTEXT MENU ========= */
+const messageMenu = document.getElementById("message-menu");
+const reactionPicker = document.getElementById("reaction-picker");
+let selectedMessageDiv = null;
+let selectedMsg = null;
 
+function showMessageMenu(e, messageDiv, msg, isMobile = false) {
+  selectedMessageDiv = messageDiv;
+  selectedMsg = msg;
+
+  messageMenu.classList.remove("hidden");
+  
+  if (isMobile) {
+    messageMenu.style.left = e.clientX + "px";
+    messageMenu.style.top = (e.clientY - 80) + "px";
+  } else {
+    messageMenu.style.left = e.clientX + "px";
+    messageMenu.style.top = e.clientY + "px";
+  }
+}
+
+// Menu item click handlers
+document.querySelectorAll(".menu-item").forEach(item => {
+  item.addEventListener("click", (e) => {
+    const action = e.target.dataset.action;
+    
+    if (action === "react") {
+      showReactionPicker(e);
+    } else if (action === "reply") {
+      startReply(selectedMsg);
+      messageMenu.classList.add("hidden");
+    }
+  });
+});
+
+function showReactionPicker(e) {
+  const rect = selectedMessageDiv.getBoundingClientRect();
+  reactionPicker.classList.remove("hidden");
+  reactionPicker.style.left = (rect.left + rect.width / 2 - 72) + "px";
+  reactionPicker.style.top = (rect.top - 60) + "px";
+}
+
+document.querySelectorAll(".reaction-emoji").forEach(btn => {
+  btn.addEventListener("click", (e) => {
+    const emoji = e.target.dataset.emoji;
+    addReaction(selectedMsg, emoji);
+    reactionPicker.classList.add("hidden");
+    messageMenu.classList.add("hidden");
+  });
+});
+
+function addReaction(msg, emoji) {
+  const msgEl = document.querySelector(`[data-id="${msg.id}"]`);
+  if (!msgEl) return;
+
+  let reactionsDiv = msgEl.querySelector(".message-reactions");
+  if (!reactionsDiv) {
+    reactionsDiv = document.createElement("div");
+    reactionsDiv.className = "message-reactions";
+    msgEl.appendChild(reactionsDiv);
+  }
+
+  let emojiBtn = reactionsDiv.querySelector(`[data-emoji="${emoji}"]`);
+  if (emojiBtn) {
+    const count = parseInt(emojiBtn.dataset.count || 1) + 1;
+    emojiBtn.dataset.count = count;
+    emojiBtn.textContent = emoji + (count > 1 ? " " + count : "");
+  } else {
+    emojiBtn = document.createElement("button");
+    emojiBtn.className = "reaction-btn";
+    emojiBtn.dataset.emoji = emoji;
+    emojiBtn.data-count = 1;
+    emojiBtn.textContent = emoji;
+    reactionsDiv.appendChild(emojiBtn);
+  }
+}
+
+// Close menu when clicking outside
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".message-menu") && !e.target.closest(".reaction-picker") && !e.target.closest(".message")) {
+    messageMenu.classList.add("hidden");
+    reactionPicker.classList.add("hidden");
+  }
+});
  async function sendMessage() {
   console.log("🚀 sendMessage triggered");
 
@@ -462,6 +595,7 @@ input.addEventListener("input", () => {
 
   socket.emit("sendMessage", msg);
   renderMessage(msg);
+  playSendSound();
 
   input.value = "";
   selectedMedia = null;
@@ -480,11 +614,25 @@ function renderMessage(msg) {
   const div = document.createElement("div");
   div.className = "message" + (msg.from === currentUser ? " me" : "");
   div.dataset.id = msg.id;
+  div.dataset.from = msg.from;
 
   div.oncontextmenu = (e) => {
     e.preventDefault();
-    startReply(msg);
+    showMessageMenu(e, div, msg);
   };
+
+  // Long press for mobile
+  let longPressTimer;
+  div.addEventListener("touchstart", () => {
+    longPressTimer = setTimeout(() => {
+      const touchEvent = event;
+      showMessageMenu({ clientX: touchEvent.touches[0].clientX, clientY: touchEvent.touches[0].clientY }, div, msg, true);
+    }, 500);
+  });
+
+  div.addEventListener("touchend", () => {
+    clearTimeout(longPressTimer);
+  });
 
   if (msg.replyTo) {
     const reply = document.createElement("div");
